@@ -81,12 +81,6 @@ const TasksTable = ({ tasks, onRefresh }: TasksTableProps) => {
             .from("campaigns")
             .update({ completed_count: (campaignData.completed_count || 0) + 1 })
             .eq("id", taskData.campaign_id);
-            // If RPC doesn't exist, do manual update
-            supabase
-              .from("campaigns")
-              .update({ completed_count: (campaignData?.completed_count || 0) + 1 })
-              .eq("id", taskData.campaign_id);
-          });
         }
       }
 
