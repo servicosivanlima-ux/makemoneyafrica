@@ -242,6 +242,13 @@ export type Database = {
             foreignKeyName: "tasks_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
+            referencedRelation: "available_campaigns_for_workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
@@ -309,7 +316,48 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      available_campaigns_for_workers: {
+        Row: {
+          completed_count: number | null
+          created_at: string | null
+          id: string | null
+          page_link: string | null
+          plan_name: string | null
+          plan_type: Database["public"]["Enums"]["plan_type"] | null
+          platform: Database["public"]["Enums"]["platform_type"] | null
+          profile_link: string | null
+          status: Database["public"]["Enums"]["campaign_status"] | null
+          target_count: number | null
+          video_link: string | null
+        }
+        Insert: {
+          completed_count?: number | null
+          created_at?: string | null
+          id?: string | null
+          page_link?: string | null
+          plan_name?: string | null
+          plan_type?: Database["public"]["Enums"]["plan_type"] | null
+          platform?: Database["public"]["Enums"]["platform_type"] | null
+          profile_link?: string | null
+          status?: Database["public"]["Enums"]["campaign_status"] | null
+          target_count?: number | null
+          video_link?: string | null
+        }
+        Update: {
+          completed_count?: number | null
+          created_at?: string | null
+          id?: string | null
+          page_link?: string | null
+          plan_name?: string | null
+          plan_type?: Database["public"]["Enums"]["plan_type"] | null
+          platform?: Database["public"]["Enums"]["platform_type"] | null
+          profile_link?: string | null
+          status?: Database["public"]["Enums"]["campaign_status"] | null
+          target_count?: number | null
+          video_link?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_user_profile: {
