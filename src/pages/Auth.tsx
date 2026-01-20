@@ -18,6 +18,7 @@ const Auth = () => {
   const initialSignup = searchParams.get("signup") === "true";
   
   const [isSignup, setIsSignup] = useState(initialSignup);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [userType, setUserType] = useState<"client" | "worker">(initialType as "client" | "worker");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -65,6 +66,11 @@ const Auth = () => {
   const validateForm = () => {
     try {
       emailSchema.parse(email);
+      
+      if (isForgotPassword) {
+        return true;
+      }
+      
       passwordSchema.parse(password);
       
       if (isSignup) {
@@ -105,8 +111,39 @@ const Auth = () => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    try {
+      emailSchema.parse(email);
+    } catch {
+      toast.error("Por favor, insira um email válido");
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      });
+      
+      if (error) throw error;
+      
+      toast.success("Email de recuperação enviado! Verifique sua caixa de entrada.");
+      setIsForgotPassword(false);
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao enviar email de recuperação");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isForgotPassword) {
+      await handleForgotPassword();
+      return;
+    }
     
     if (!validateForm()) return;
     
@@ -187,15 +224,19 @@ const Auth = () => {
               <span className="font-display font-bold text-2xl text-primary-foreground">M</span>
             </div>
             <h1 className="font-display text-2xl font-bold text-foreground mb-2">
-              {isSignup ? "Criar Conta" : "Bem-vindo de Volta"}
+              {isForgotPassword ? "Recuperar Senha" : isSignup ? "Criar Conta" : "Bem-vindo de Volta"}
             </h1>
             <p className="text-muted-foreground text-sm">
-              {isSignup ? "Preencha os dados para começar" : "Entre para acessar sua conta"}
+              {isForgotPassword 
+                ? "Insira seu email para receber o link de recuperação" 
+                : isSignup 
+                  ? "Preencha os dados para começar" 
+                  : "Entre para acessar sua conta"}
             </p>
           </div>
 
           {/* User type selector (only for signup) */}
-          {isSignup && (
+          {isSignup && !isForgotPassword && (
             <div className="grid grid-cols-2 gap-3 mb-6">
               <button
                 type="button"
@@ -230,7 +271,7 @@ const Auth = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Common fields */}
-            {isSignup && (
+            {isSignup && !isForgotPassword && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Nome Completo</label>
@@ -270,29 +311,40 @@ const Auth = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Senha</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input-styled w-full pr-10"
-                  placeholder="••••••••"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+            {!isForgotPassword && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Senha</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="input-styled w-full pr-10"
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {!isSignup && (
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotPassword(true)}
+                    className="text-sm text-primary hover:text-primary/80 mt-2 transition-colors"
+                  >
+                    Esqueceu a senha?
+                  </button>
+                )}
               </div>
-            </div>
+            )}
 
             {/* Client specific fields */}
-            {isSignup && userType === "client" && (
+            {isSignup && !isForgotPassword && userType === "client" && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Tipo de Conta</label>
@@ -339,7 +391,7 @@ const Auth = () => {
             )}
 
             {/* Worker specific fields */}
-            {isSignup && userType === "worker" && (
+            {isSignup && !isForgotPassword && userType === "worker" && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Método de Saque</label>
@@ -462,27 +514,42 @@ const Auth = () => {
               type="submit"
               disabled={loading}
               className={`w-full py-3 rounded-lg font-semibold transition-all duration-200 ${
-                userType === "worker" && isSignup
+                userType === "worker" && isSignup && !isForgotPassword
                   ? "btn-gold"
                   : "btn-primary"
               } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              {loading ? "Processando..." : isSignup ? "Criar Conta" : "Entrar"}
+              {loading 
+                ? "Processando..." 
+                : isForgotPassword 
+                  ? "Enviar Link de Recuperação" 
+                  : isSignup 
+                    ? "Criar Conta" 
+                    : "Entrar"}
             </button>
           </form>
 
           {/* Toggle signup/login */}
           <div className="mt-6 text-center">
-            <button
-              onClick={() => setIsSignup(!isSignup)}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {isSignup ? (
-                <>Já tem uma conta? <span className="text-primary font-medium">Entrar</span></>
-              ) : (
-                <>Não tem conta? <span className="text-primary font-medium">Criar conta</span></>
-              )}
-            </button>
+            {isForgotPassword ? (
+              <button
+                onClick={() => setIsForgotPassword(false)}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <span className="text-primary font-medium">← Voltar ao login</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsSignup(!isSignup)}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {isSignup ? (
+                  <>Já tem uma conta? <span className="text-primary font-medium">Entrar</span></>
+                ) : (
+                  <>Não tem conta? <span className="text-primary font-medium">Criar conta</span></>
+                )}
+              </button>
+            )}
           </div>
 
           {/* Security notice */}
