@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { 
   LayoutDashboard, 
   CreditCard, 
@@ -10,16 +11,32 @@ import {
   Settings,
   FileText
 } from "lucide-react";
-import { NavLink } from "@/components/NavLink";
+import { cn } from "@/lib/utils";
 
 interface AdminSidebarProps {
   onLogout: () => void;
+  activeSection?: string;
+  onSectionChange?: (section: string) => void;
 }
 
-const AdminSidebar = ({ onLogout }: AdminSidebarProps) => {
+const AdminSidebar = ({ onLogout, activeSection = "dashboard", onSectionChange }: AdminSidebarProps) => {
   const menuItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
+    { icon: LayoutDashboard, label: "Painel", section: "dashboard" },
+    { icon: CreditCard, label: "Pagamentos", section: "pagamentos" },
+    { icon: CheckSquare, label: "Tarefas", section: "tarefas" },
+    { icon: Users, label: "Usuários", section: "usuarios" },
+    { icon: Wallet, label: "Saques", section: "saques" },
+    { icon: Shield, label: "Antifraude", section: "antifraude" },
+    { icon: Bell, label: "Notificações", section: "notificacoes" },
+    { icon: FileText, label: "Registros", section: "registros" },
+    { icon: Settings, label: "Configurações", section: "configuracoes" },
   ];
+
+  const handleSectionClick = (section: string) => {
+    if (onSectionChange) {
+      onSectionChange(section);
+    }
+  };
 
   return (
     <aside className="fixed left-0 top-0 h-full w-64 bg-card border-r border-border hidden lg:block z-50">
@@ -36,16 +53,17 @@ const AdminSidebar = ({ onLogout }: AdminSidebarProps) => {
 
         <nav className="space-y-1">
           {menuItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path === "/admin"}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
-              activeClassName="bg-primary/10 text-primary"
+            <button
+              key={item.section}
+              onClick={() => handleSectionClick(item.section)}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted transition-colors w-full text-left",
+                activeSection === item.section && "bg-primary/10 text-primary"
+              )}
             >
               <item.icon className="w-5 h-5" />
               <span className="font-medium">{item.label}</span>
-            </NavLink>
+            </button>
           ))}
         </nav>
       </div>
