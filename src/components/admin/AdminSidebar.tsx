@@ -19,14 +19,6 @@ interface AdminSidebarProps {
 const AdminSidebar = ({ onLogout }: AdminSidebarProps) => {
   const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
-    { icon: CreditCard, label: "Pagamentos", path: "/admin/payments" },
-    { icon: CheckSquare, label: "Tarefas", path: "/admin/tasks" },
-    { icon: Users, label: "Usuários", path: "/admin/users" },
-    { icon: Wallet, label: "Saques", path: "/admin/withdrawals" },
-    { icon: Shield, label: "Antifraude", path: "/admin/antifraud" },
-    { icon: Bell, label: "Notificações", path: "/admin/notifications" },
-    { icon: FileText, label: "Logs", path: "/admin/logs" },
-    { icon: Settings, label: "Configurações", path: "/admin/settings" },
   ];
 
   return (

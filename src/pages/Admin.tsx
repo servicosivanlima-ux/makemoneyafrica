@@ -93,30 +93,52 @@ const Admin = () => {
       // Load pending payments (campaigns with pending_payment status)
       const { data: campaignsData, error: campaignsError } = await supabase
         .from("campaigns")
-        .select(`
-          *,
-          client:profiles!campaigns_client_id_fkey(full_name, email, phone)
-        `)
+        .select("*")
         .eq("status", "pending_payment")
         .order("created_at", { ascending: false });
 
       if (!campaignsError && campaignsData) {
-        setPendingCampaigns(campaignsData);
+        // Fetch client profiles separately
+        const clientIds = [...new Set(campaignsData.map(c => c.client_id))];
+        const { data: clientProfiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, email, phone")
+          .in("user_id", clientIds);
+
+        const campaignsWithClients = campaignsData.map(campaign => ({
+          ...campaign,
+          client: clientProfiles?.find(p => p.user_id === campaign.client_id) || null
+        }));
+        setPendingCampaigns(campaignsWithClients);
       }
 
       // Load pending tasks
       const { data: tasksData, error: tasksError } = await supabase
         .from("tasks")
-        .select(`
-          *,
-          campaign:campaigns(plan_type, plan_name, platform, page_link),
-          worker:profiles!tasks_worker_id_fkey(full_name, email)
-        `)
+        .select("*")
         .eq("status", "pending_review")
         .order("completed_at", { ascending: false });
 
       if (!tasksError && tasksData) {
-        setPendingTasks(tasksData);
+        // Fetch related campaigns and workers
+        const campaignIds = [...new Set(tasksData.map(t => t.campaign_id))];
+        const workerIds = [...new Set(tasksData.filter(t => t.worker_id).map(t => t.worker_id!))];
+
+        const { data: campaignsInfo } = await supabase
+          .from("campaigns")
+          .select("id, plan_type, plan_name, platform, page_link")
+          .in("id", campaignIds);
+
+        const { data: workerProfiles } = workerIds.length > 0 
+          ? await supabase.from("profiles").select("user_id, full_name, email").in("user_id", workerIds)
+          : { data: [] };
+
+        const tasksWithRelations = tasksData.map(task => ({
+          ...task,
+          campaign: campaignsInfo?.find(c => c.id === task.campaign_id) || null,
+          worker: workerProfiles?.find(p => p.user_id === task.worker_id) || null
+        }));
+        setPendingTasks(tasksWithRelations);
       }
 
       // Load all users
@@ -132,15 +154,23 @@ const Admin = () => {
       // Load pending withdrawals
       const { data: withdrawalsData, error: withdrawalsError } = await supabase
         .from("withdrawals")
-        .select(`
-          *,
-          worker:profiles!withdrawals_worker_id_fkey(full_name, email, phone)
-        `)
+        .select("*")
         .eq("status", "pending")
         .order("created_at", { ascending: false });
 
       if (!withdrawalsError && withdrawalsData) {
-        setPendingWithdrawals(withdrawalsData);
+        // Fetch worker profiles separately
+        const workerIds = [...new Set(withdrawalsData.map(w => w.worker_id))];
+        const { data: workerProfiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, email, phone")
+          .in("user_id", workerIds);
+
+        const withdrawalsWithWorkers = withdrawalsData.map(withdrawal => ({
+          ...withdrawal,
+          worker: workerProfiles?.find(p => p.user_id === withdrawal.worker_id) || null
+        }));
+        setPendingWithdrawals(withdrawalsWithWorkers);
       }
 
       // Calculate stats
