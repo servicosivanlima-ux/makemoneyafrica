@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 
 interface Withdrawal {
   id: string;
+  worker_id: string;
   amount: number;
   status: string;
   withdrawal_method: string;
@@ -41,29 +42,17 @@ const WithdrawalsTable = ({ withdrawals, onRefresh }: WithdrawalsTableProps) => 
   const handleApprove = async (withdrawal: Withdrawal) => {
     setProcessing(withdrawal.id);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const { error } = await supabase
-        .from("withdrawals")
-        .update({ 
-          status: "approved",
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id
-        })
-        .eq("id", withdrawal.id);
+      // Use secure server-side function
+      const { error } = await supabase.rpc('admin_approve_withdrawal', {
+        p_withdrawal_id: withdrawal.id
+      });
 
       if (error) throw error;
 
-      // Get worker_id for notification
-      const { data: withdrawalData } = await supabase
-        .from("withdrawals")
-        .select("worker_id")
-        .eq("id", withdrawal.id)
-        .single();
-
-      if (withdrawalData) {
+      // Send notification to worker
+      if (withdrawal.worker_id) {
         await supabase.from("notifications").insert({
-          user_id: withdrawalData.worker_id,
+          user_id: withdrawal.worker_id,
           title: "Saque Aprovado!",
           message: `Seu saque de ${withdrawal.amount} Kz foi aprovado e será processado em breve.`
         });
@@ -71,9 +60,8 @@ const WithdrawalsTable = ({ withdrawals, onRefresh }: WithdrawalsTableProps) => 
 
       toast.success("Saque aprovado com sucesso!");
       onRefresh();
-    } catch (error) {
-      console.error("Error approving withdrawal:", error);
-      toast.error("Erro ao aprovar saque");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao aprovar saque");
     } finally {
       setProcessing(null);
     }
@@ -87,30 +75,18 @@ const WithdrawalsTable = ({ withdrawals, onRefresh }: WithdrawalsTableProps) => 
 
     setProcessing(withdrawalToReject.id);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const { error } = await supabase
-        .from("withdrawals")
-        .update({ 
-          status: "rejected",
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id,
-          rejection_reason: rejectReason
-        })
-        .eq("id", withdrawalToReject.id);
+      // Use secure server-side function
+      const { error } = await supabase.rpc('admin_reject_withdrawal', {
+        p_withdrawal_id: withdrawalToReject.id,
+        p_reason: rejectReason
+      });
 
       if (error) throw error;
 
-      // Get worker_id for notification
-      const { data: withdrawalData } = await supabase
-        .from("withdrawals")
-        .select("worker_id")
-        .eq("id", withdrawalToReject.id)
-        .single();
-
-      if (withdrawalData) {
+      // Send notification to worker
+      if (withdrawalToReject.worker_id) {
         await supabase.from("notifications").insert({
-          user_id: withdrawalData.worker_id,
+          user_id: withdrawalToReject.worker_id,
           title: "Saque Rejeitado",
           message: `Seu saque de ${withdrawalToReject.amount} Kz foi rejeitado. Motivo: ${rejectReason}`
         });
@@ -121,9 +97,8 @@ const WithdrawalsTable = ({ withdrawals, onRefresh }: WithdrawalsTableProps) => 
       setRejectReason("");
       setWithdrawalToReject(null);
       onRefresh();
-    } catch (error) {
-      console.error("Error rejecting withdrawal:", error);
-      toast.error("Erro ao rejeitar saque");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao rejeitar saque");
     } finally {
       setProcessing(null);
     }

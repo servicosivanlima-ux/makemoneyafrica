@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 
 interface Task {
   id: string;
+  worker_id: string | null;
   status: string;
   reward_amount: number;
   follow_proof_url: string | null;
@@ -48,64 +49,26 @@ const TasksTable = ({ tasks, onRefresh }: TasksTableProps) => {
   const handleApprove = async (task: Task) => {
     setProcessing(task.id);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // Update task status
-      const { error: taskError } = await supabase
-        .from("tasks")
-        .update({ 
-          status: "approved",
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id
-        })
-        .eq("id", task.id);
+      // Use secure server-side function
+      const { error } = await supabase.rpc('admin_approve_task', {
+        p_task_id: task.id
+      });
 
-      if (taskError) throw taskError;
-
-      // Update campaign completed count
-      const { data: taskData } = await supabase
-        .from("tasks")
-        .select("campaign_id")
-        .eq("id", task.id)
-        .single();
-
-      if (taskData) {
-        const { data: campaignData } = await supabase
-          .from("campaigns")
-          .select("completed_count")
-          .eq("id", taskData.campaign_id)
-          .single();
-
-        if (campaignData) {
-          await supabase
-            .from("campaigns")
-            .update({ completed_count: (campaignData.completed_count || 0) + 1 })
-            .eq("id", taskData.campaign_id);
-        }
-      }
+      if (error) throw error;
 
       // Send notification to worker
-      if (task.worker) {
-        const { data: taskData } = await supabase
-          .from("tasks")
-          .select("worker_id")
-          .eq("id", task.id)
-          .single();
-
-        if (taskData) {
-          await supabase.from("notifications").insert({
-            user_id: taskData.worker_id,
-            title: "Tarefa Aprovada!",
-            message: `Sua tarefa foi aprovada. ${task.reward_amount} Kz foram adicionados ao seu saldo.`
-          });
-        }
+      if (task.worker_id) {
+        await supabase.from("notifications").insert({
+          user_id: task.worker_id,
+          title: "Tarefa Aprovada!",
+          message: `Sua tarefa foi aprovada. ${task.reward_amount} Kz foram adicionados ao seu saldo.`
+        });
       }
 
       toast.success("Tarefa aprovada com sucesso!");
       onRefresh();
-    } catch (error) {
-      console.error("Error approving task:", error);
-      toast.error("Erro ao aprovar tarefa");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao aprovar tarefa");
     } finally {
       setProcessing(null);
     }
@@ -119,30 +82,18 @@ const TasksTable = ({ tasks, onRefresh }: TasksTableProps) => {
 
     setProcessing(taskToReject.id);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const { error } = await supabase
-        .from("tasks")
-        .update({ 
-          status: "rejected",
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id,
-          rejection_reason: rejectReason
-        })
-        .eq("id", taskToReject.id);
+      // Use secure server-side function
+      const { error } = await supabase.rpc('admin_reject_task', {
+        p_task_id: taskToReject.id,
+        p_reason: rejectReason
+      });
 
       if (error) throw error;
 
       // Send notification to worker
-      const { data: taskData } = await supabase
-        .from("tasks")
-        .select("worker_id")
-        .eq("id", taskToReject.id)
-        .single();
-
-      if (taskData) {
+      if (taskToReject.worker_id) {
         await supabase.from("notifications").insert({
-          user_id: taskData.worker_id,
+          user_id: taskToReject.worker_id,
           title: "Tarefa Rejeitada",
           message: `Sua tarefa foi rejeitada. Motivo: ${rejectReason}`
         });
@@ -153,9 +104,8 @@ const TasksTable = ({ tasks, onRefresh }: TasksTableProps) => {
       setRejectReason("");
       setTaskToReject(null);
       onRefresh();
-    } catch (error) {
-      console.error("Error rejecting task:", error);
-      toast.error("Erro ao rejeitar tarefa");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao rejeitar tarefa");
     } finally {
       setProcessing(null);
     }
