@@ -34,6 +34,7 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userName, setUserName] = useState("Admin");
+  const [activeSection, setActiveSection] = useState("dashboard");
   const [stats, setStats] = useState<DashboardStats>({
     pendingPayments: 0,
     pendingTasks: 0,
@@ -228,7 +229,11 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AdminSidebar onLogout={handleLogout} />
+      <AdminSidebar 
+        onLogout={handleLogout} 
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
+      />
 
       <main className="lg:ml-64">
         <AdminHeader 
@@ -289,84 +294,178 @@ const Admin = () => {
             />
           </div>
 
-          {/* Main Content Tabs */}
-          <Tabs defaultValue="payments" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="payments" className="relative">
-                Pagamentos
-                {stats.pendingPayments > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {stats.pendingPayments}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="tasks" className="relative">
-                Tarefas
-                {stats.pendingTasks > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {stats.pendingTasks}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="withdrawals" className="relative">
-                Saques
-                {stats.pendingWithdrawals > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {stats.pendingWithdrawals}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="users">Usuários</TabsTrigger>
-            </TabsList>
+          {/* Main Content based on active section */}
+          {activeSection === "dashboard" && (
+            <Tabs defaultValue="payments" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="payments" className="relative">
+                  Pagamentos
+                  {stats.pendingPayments > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {stats.pendingPayments}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="tasks" className="relative">
+                  Tarefas
+                  {stats.pendingTasks > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {stats.pendingTasks}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="withdrawals" className="relative">
+                  Saques
+                  {stats.pendingWithdrawals > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {stats.pendingWithdrawals}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="users">Usuários</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="payments">
-              <div className="space-y-4">
-                <h2 className="text-lg font-display font-bold text-foreground">
-                  Pagamentos Pendentes de Aprovação
-                </h2>
-                <PaymentsTable 
-                  campaigns={pendingCampaigns} 
-                  onRefresh={loadDashboardData} 
-                />
-              </div>
-            </TabsContent>
+              <TabsContent value="payments">
+                <div className="space-y-4">
+                  <h2 className="text-lg font-display font-bold text-foreground">
+                    Pagamentos Pendentes de Aprovação
+                  </h2>
+                  <PaymentsTable 
+                    campaigns={pendingCampaigns} 
+                    onRefresh={loadDashboardData} 
+                  />
+                </div>
+              </TabsContent>
 
-            <TabsContent value="tasks">
-              <div className="space-y-4">
-                <h2 className="text-lg font-display font-bold text-foreground">
-                  Tarefas Aguardando Revisão
-                </h2>
-                <TasksTable 
-                  tasks={pendingTasks} 
-                  onRefresh={loadDashboardData} 
-                />
-              </div>
-            </TabsContent>
+              <TabsContent value="tasks">
+                <div className="space-y-4">
+                  <h2 className="text-lg font-display font-bold text-foreground">
+                    Tarefas Aguardando Revisão
+                  </h2>
+                  <TasksTable 
+                    tasks={pendingTasks} 
+                    onRefresh={loadDashboardData} 
+                  />
+                </div>
+              </TabsContent>
 
-            <TabsContent value="withdrawals">
-              <div className="space-y-4">
-                <h2 className="text-lg font-display font-bold text-foreground">
-                  Saques Pendentes
-                </h2>
-                <WithdrawalsTable 
-                  withdrawals={pendingWithdrawals} 
-                  onRefresh={loadDashboardData} 
-                />
-              </div>
-            </TabsContent>
+              <TabsContent value="withdrawals">
+                <div className="space-y-4">
+                  <h2 className="text-lg font-display font-bold text-foreground">
+                    Saques Pendentes
+                  </h2>
+                  <WithdrawalsTable 
+                    withdrawals={pendingWithdrawals} 
+                    onRefresh={loadDashboardData} 
+                  />
+                </div>
+              </TabsContent>
 
-            <TabsContent value="users">
-              <div className="space-y-4">
-                <h2 className="text-lg font-display font-bold text-foreground">
-                  Gestão de Usuários
-                </h2>
-                <UsersTable 
-                  users={users} 
-                  onRefresh={loadDashboardData} 
-                />
-              </div>
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="users">
+                <div className="space-y-4">
+                  <h2 className="text-lg font-display font-bold text-foreground">
+                    Gestão de Usuários
+                  </h2>
+                  <UsersTable 
+                    users={users} 
+                    onRefresh={loadDashboardData} 
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+
+          {activeSection === "pagamentos" && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-display font-bold text-foreground">
+                Pagamentos Pendentes de Aprovação
+              </h2>
+              <PaymentsTable 
+                campaigns={pendingCampaigns} 
+                onRefresh={loadDashboardData} 
+              />
+            </div>
+          )}
+
+          {activeSection === "tarefas" && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-display font-bold text-foreground">
+                Tarefas Aguardando Revisão
+              </h2>
+              <TasksTable 
+                tasks={pendingTasks} 
+                onRefresh={loadDashboardData} 
+              />
+            </div>
+          )}
+
+          {activeSection === "usuarios" && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-display font-bold text-foreground">
+                Gestão de Usuários
+              </h2>
+              <UsersTable 
+                users={users} 
+                onRefresh={loadDashboardData} 
+              />
+            </div>
+          )}
+
+          {activeSection === "saques" && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-display font-bold text-foreground">
+                Saques Pendentes
+              </h2>
+              <WithdrawalsTable 
+                withdrawals={pendingWithdrawals} 
+                onRefresh={loadDashboardData} 
+              />
+            </div>
+          )}
+
+          {activeSection === "antifraude" && (
+            <div className="card-elevated p-6">
+              <h2 className="text-lg font-display font-bold text-foreground mb-4">
+                Sistema Antifraude
+              </h2>
+              <p className="text-muted-foreground">
+                Gerencie dispositivos bloqueados e detecte fraudes.
+              </p>
+            </div>
+          )}
+
+          {activeSection === "notificacoes" && (
+            <div className="card-elevated p-6">
+              <h2 className="text-lg font-display font-bold text-foreground mb-4">
+                Notificações
+              </h2>
+              <p className="text-muted-foreground">
+                Gerencie notificações do sistema.
+              </p>
+            </div>
+          )}
+
+          {activeSection === "registros" && (
+            <div className="card-elevated p-6">
+              <h2 className="text-lg font-display font-bold text-foreground mb-4">
+                Registros
+              </h2>
+              <p className="text-muted-foreground">
+                Visualize logs e atividades do sistema.
+              </p>
+            </div>
+          )}
+
+          {activeSection === "configuracoes" && (
+            <div className="card-elevated p-6">
+              <h2 className="text-lg font-display font-bold text-foreground mb-4">
+                Configurações
+              </h2>
+              <p className="text-muted-foreground">
+                Configure opções do painel administrativo.
+              </p>
+            </div>
+          )}
         </div>
       </main>
     </div>
