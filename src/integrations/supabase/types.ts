@@ -360,6 +360,38 @@ export type Database = {
       }
     }
     Functions: {
+      admin_approve_campaign: {
+        Args: { p_campaign_id: string }
+        Returns: boolean
+      }
+      admin_approve_task: { Args: { p_task_id: string }; Returns: boolean }
+      admin_approve_withdrawal: {
+        Args: { p_withdrawal_id: string }
+        Returns: boolean
+      }
+      admin_reject_campaign: {
+        Args: { p_campaign_id: string }
+        Returns: boolean
+      }
+      admin_reject_task: {
+        Args: { p_reason: string; p_task_id: string }
+        Returns: boolean
+      }
+      admin_reject_withdrawal: {
+        Args: { p_reason: string; p_withdrawal_id: string }
+        Returns: boolean
+      }
+      create_campaign_secure: {
+        Args: {
+          p_page_link: string
+          p_plan_name: string
+          p_plan_type: string
+          p_platform: string
+          p_profile_link?: string
+          p_video_link?: string
+        }
+        Returns: string
+      }
       get_user_profile: {
         Args: { _user_id: string }
         Returns: {

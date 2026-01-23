@@ -12,6 +12,7 @@ import {
 
 interface Campaign {
   id: string;
+  client_id: string;
   plan_name: string;
   platform: string;
   price: number;
@@ -37,40 +38,27 @@ const PaymentsTable = ({ campaigns, onRefresh }: PaymentsTableProps) => {
   const handleApprove = async (campaignId: string) => {
     setProcessing(campaignId);
     try {
-      const { error } = await supabase
-        .from("campaigns")
-        .update({ 
-          status: "active",
-          payment_confirmed_at: new Date().toISOString()
-        })
-        .eq("id", campaignId);
+      // Use secure server-side function
+      const { error } = await supabase.rpc('admin_approve_campaign', {
+        p_campaign_id: campaignId
+      });
 
       if (error) throw error;
 
-      // Get campaign details for notification
+      // Find campaign for notification
       const campaign = campaigns.find(c => c.id === campaignId);
-      if (campaign) {
-        // Create notification for client
-        const { data: campaignData } = await supabase
-          .from("campaigns")
-          .select("client_id")
-          .eq("id", campaignId)
-          .single();
-
-        if (campaignData) {
-          await supabase.from("notifications").insert({
-            user_id: campaignData.client_id,
-            title: "Pagamento Aprovado!",
-            message: `Seu pagamento para a campanha "${campaign.plan_name}" foi aprovado. A campanha está agora ativa!`
-          });
-        }
+      if (campaign?.client_id) {
+        await supabase.from("notifications").insert({
+          user_id: campaign.client_id,
+          title: "Pagamento Aprovado!",
+          message: `Seu pagamento para a campanha "${campaign.plan_name}" foi aprovado. A campanha está agora ativa!`
+        });
       }
 
       toast.success("Pagamento aprovado com sucesso!");
       onRefresh();
-    } catch (error) {
-      console.error("Error approving payment:", error);
-      toast.error("Erro ao aprovar pagamento");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao aprovar pagamento");
     } finally {
       setProcessing(null);
     }
@@ -79,36 +67,27 @@ const PaymentsTable = ({ campaigns, onRefresh }: PaymentsTableProps) => {
   const handleReject = async (campaignId: string) => {
     setProcessing(campaignId);
     try {
-      const { error } = await supabase
-        .from("campaigns")
-        .update({ status: "cancelled" })
-        .eq("id", campaignId);
+      // Use secure server-side function
+      const { error } = await supabase.rpc('admin_reject_campaign', {
+        p_campaign_id: campaignId
+      });
 
       if (error) throw error;
 
-      // Get campaign details for notification
+      // Find campaign for notification
       const campaign = campaigns.find(c => c.id === campaignId);
-      if (campaign) {
-        const { data: campaignData } = await supabase
-          .from("campaigns")
-          .select("client_id")
-          .eq("id", campaignId)
-          .single();
-
-        if (campaignData) {
-          await supabase.from("notifications").insert({
-            user_id: campaignData.client_id,
-            title: "Pagamento Rejeitado",
-            message: `Seu pagamento para a campanha "${campaign.plan_name}" foi rejeitado. Entre em contato para mais informações.`
-          });
-        }
+      if (campaign?.client_id) {
+        await supabase.from("notifications").insert({
+          user_id: campaign.client_id,
+          title: "Pagamento Rejeitado",
+          message: `Seu pagamento para a campanha "${campaign.plan_name}" foi rejeitado. Entre em contato para mais informações.`
+        });
       }
 
       toast.success("Pagamento rejeitado");
       onRefresh();
-    } catch (error) {
-      console.error("Error rejecting payment:", error);
-      toast.error("Erro ao rejeitar pagamento");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao rejeitar pagamento");
     } finally {
       setProcessing(null);
     }

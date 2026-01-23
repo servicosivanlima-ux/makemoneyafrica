@@ -70,42 +70,36 @@ const CreateCampaign = ({ user, onComplete, onBack }: CreateCampaignProps) => {
       return;
     }
 
+    // Client-side validation
+    if (pageLink.length < 10 || !pageLink.startsWith("http")) {
+      toast.error("Por favor, insira um link válido");
+      return;
+    }
+
     setLoading(true);
     try {
-      // Check for pending campaigns
-      const { data: pendingCampaigns } = await supabase
-        .from("campaigns")
-        .select("id")
-        .eq("client_id", user.id)
-        .eq("status", "pending_payment")
-        .limit(1);
-
-      if (pendingCampaigns && pendingCampaigns.length > 0) {
-        toast.error("Você já tem uma campanha pendente de pagamento");
-        setLoading(false);
-        return;
-      }
-
-      const { error } = await supabase.from("campaigns").insert({
-        client_id: user.id,
-        plan_type: planType === "limao" ? "ta_no_limao" : "kwanza",
-        plan_name: selectedPlan.name,
-        platform: platform,
-        page_link: pageLink,
-        profile_link: profileLink || null,
-        video_link: videoLink || null,
-        target_count: selectedPlan.count,
-        price: selectedPlan.price,
-        status: "pending_payment",
-      } as any);
+      // Use secure server-side function for campaign creation
+      const { data: campaignId, error } = await supabase.rpc('create_campaign_secure', {
+        p_plan_type: planType === "limao" ? "ta_no_limao" : "kwanza",
+        p_plan_name: selectedPlan.name,
+        p_platform: platform,
+        p_page_link: pageLink,
+        p_profile_link: profileLink || null,
+        p_video_link: videoLink || null
+      });
 
       if (error) throw error;
 
       toast.success("Campanha criada com sucesso!");
       onComplete();
-    } catch (error) {
-      console.error("Error creating campaign:", error);
-      toast.error("Erro ao criar campanha");
+    } catch (error: any) {
+      if (error.message?.includes("pending campaign")) {
+        toast.error("Você já tem uma campanha pendente de pagamento");
+      } else if (error.message?.includes("Only clients")) {
+        toast.error("Apenas clientes podem criar campanhas");
+      } else {
+        toast.error(error.message || "Erro ao criar campanha");
+      }
     } finally {
       setLoading(false);
     }
