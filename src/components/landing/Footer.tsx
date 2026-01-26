@@ -1,9 +1,7 @@
 import { Facebook, Instagram, Youtube } from "lucide-react";
 import { Link } from "react-router-dom";
-
 const Footer = () => {
-  return (
-    <footer className="bg-card border-t border-border py-12">
+  return <footer className="bg-card border-t border-border py-12">
       <div className="container-app">
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           {/* Brand */}
@@ -14,9 +12,7 @@ const Footer = () => {
               </div>
               <span className="font-display font-bold text-xl text-foreground">Make Money With Lima</span>
             </Link>
-            <p className="text-muted-foreground text-sm max-w-md mb-4">
-              A plataforma #1 em Angola para crescimento de redes sociais. Seguro, confiável e rentável para todos.
-            </p>
+            <p className="text-muted-foreground text-sm max-w-md mb-4">A plataforma Nº 1 em Angola para crescimento de redes sociais. Seguro, confiável e rentável para todos.</p>
             <div className="flex items-center gap-3">
               <a href="#" className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center hover:bg-primary/20 transition-colors">
                 <Facebook className="w-4 h-4 text-muted-foreground" />
@@ -68,8 +64,6 @@ const Footer = () => {
           </div>
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 };
-
 export default Footer;
