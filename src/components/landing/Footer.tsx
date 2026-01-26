@@ -14,7 +14,7 @@ const Footer = () => {
             </Link>
             <p className="text-muted-foreground text-sm max-w-md mb-4">A plataforma Nº 1 em Angola para crescimento de redes sociais. Seguro, confiável e rentável para todos.</p>
             <div className="flex items-center gap-3">
-              <a href="#" className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center hover:bg-primary/20 transition-colors">
+              <a href="https://web.facebook.com/profile.php?id=61586742401619" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center hover:bg-primary/20 transition-colors">
                 <Facebook className="w-4 h-4 text-muted-foreground" />
               </a>
               <a href="#" className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center hover:bg-primary/20 transition-colors">
