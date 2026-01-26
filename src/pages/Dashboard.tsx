@@ -10,9 +10,11 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import ClientStats from "@/components/dashboard/client/ClientStats";
 import ClientCampaigns from "@/components/dashboard/client/ClientCampaigns";
 import CreateCampaign from "@/components/dashboard/client/CreateCampaign";
+import ClientSettings from "@/components/dashboard/client/ClientSettings";
 import WorkerStats from "@/components/dashboard/worker/WorkerStats";
 import TasksList from "@/components/dashboard/worker/TasksList";
 import WithdrawalRequest from "@/components/dashboard/worker/WithdrawalRequest";
+import WorkerSettings from "@/components/dashboard/worker/WorkerSettings";
 import NotificationsList from "@/components/dashboard/NotificationsList";
 
 interface ClientStatsData {
@@ -233,15 +235,12 @@ const Dashboard = () => {
             <NotificationsList user={user} />
           )}
 
-          {activeSection === "configuracoes" && (
-            <div className="card-elevated p-6">
-              <h2 className="font-display font-bold text-lg text-foreground mb-4">
-                Configurações
-              </h2>
-              <p className="text-muted-foreground">
-                Em breve você poderá editar seu perfil e preferências aqui.
-              </p>
-            </div>
+          {activeSection === "configuracoes" && userType === "client" && (
+            <ClientSettings user={user} />
+          )}
+
+          {activeSection === "configuracoes" && userType === "worker" && (
+            <WorkerSettings user={user} />
           )}
         </div>
       </main>
