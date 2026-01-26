@@ -303,9 +303,7 @@ const CreateCampaign = ({
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Link da Página/Perfil/Post *</label>
               <input type="url" value={pageLink} onChange={e => setPageLink(e.target.value)} className="input-styled w-full" required placeholder="inserir o link da campanha em https//exemplo.com" />
-              <p className="text-xs text-muted-foreground mt-1">
-                Link principal onde os trabalhadores irão seguir
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Link principal onde os trabalhadores irão realizar a tarefa</p>
             </div>
 
             {planType === "kwanza" && <>
