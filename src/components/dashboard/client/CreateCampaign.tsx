@@ -158,7 +158,7 @@ const CreateCampaign = ({
       setLoading(false);
     }
   };
-  const whatsappNumber = "244923456789"; // Número do WhatsApp para pagamento
+  const whatsappNumber = "244923066682"; // Número do WhatsApp para pagamento
   const whatsappMessage = encodeURIComponent(`Olá! Criei uma campanha no MMWL:\n\n` + `📦 Plano: ${planType === "limao" ? "Tá no Limão" : "Kwanza"} - ${selectedPlan?.name}\n` + `🎯 Meta: ${selectedPlan?.count} ${planType === "limao" ? "seguidores" : "ações"}\n` + `💰 Valor: ${formatPrice(selectedPlan?.price || 0)}\n` + `📱 Plataforma: ${PLATFORMS.find(p => p.id === platform)?.name}\n` + `🔗 Link: ${pageLink}\n\n` + `Gostaria de confirmar o pagamento.`);
   return <div className="max-w-4xl mx-auto">
       {/* Progress Steps */}
