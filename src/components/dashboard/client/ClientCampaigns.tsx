@@ -195,7 +195,7 @@ const ClientCampaigns = ({
                         <div className="space-y-1 text-xs text-muted-foreground">
                           <p><span className="font-medium text-foreground">Banco:</span>Banco: BIC</p>
                           <p><span className="font-medium text-foreground">IBAN:</span>IBAN: AO06.0051.0000.2346.1271.1013.1</p>
-                          <p><span className="font-medium text-foreground">Titular:</span> MakeMoneyWithLima Lda</p>
+                          <p><span className="font-medium text-foreground">Titular:</span>Titular: IVAN GERALDO MANUEL LIMA</p>
                         </div>
                       </div>
 
