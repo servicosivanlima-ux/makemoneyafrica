@@ -429,6 +429,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      worker_claim_task: { Args: { p_campaign_id: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "client" | "worker"

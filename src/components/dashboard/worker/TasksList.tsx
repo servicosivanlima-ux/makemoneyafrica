@@ -92,44 +92,23 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
         return;
       }
 
-      // Calculate reward
-      const rewardPerTask = campaign.plan_type === "limao" ? 100 : 200;
+      // Use secure RPC function to claim task
+      const { data, error } = await supabase.rpc("worker_claim_task", {
+        p_campaign_id: campaign.id,
+      });
 
-      // Create or claim task
-      const { data: existingTask, error: findError } = await supabase
-        .from("tasks")
-        .select("*")
-        .eq("campaign_id", campaign.id)
-        .eq("status", "available")
-        .is("worker_id", null)
-        .limit(1)
-        .maybeSingle();
-
-      if (findError) throw findError;
-
-      if (existingTask) {
-        // Claim existing task
-        const { error } = await supabase
-          .from("tasks")
-          .update({
-            worker_id: user.id,
-            status: "in_progress",
-            assigned_at: new Date().toISOString(),
-          })
-          .eq("id", existingTask.id);
-
-        if (error) throw error;
-      } else {
-        // Create new task
-        const { error } = await supabase.from("tasks").insert({
-          campaign_id: campaign.id,
-          worker_id: user.id,
-          status: "in_progress",
-          reward_amount: rewardPerTask,
-          assigned_at: new Date().toISOString(),
-        });
-
-        if (error) throw error;
+      if (error) {
+        console.error("RPC Error:", error);
+        if (error.message.includes("já tem uma tarefa")) {
+          toast.error("Você já tem uma tarefa para esta campanha");
+        } else if (error.message.includes("atingiu o limite")) {
+          toast.error("Esta campanha já atingiu o limite de tarefas");
+        } else if (error.message.includes("não está ativa")) {
+          toast.error("Esta campanha não está mais disponível");
+        } else {
+          toast.error("Erro ao reservar tarefa. Tente novamente.");
+        }
+        return;
       }
 
       toast.success("Tarefa reservada! Complete-a em até 24 horas.");
