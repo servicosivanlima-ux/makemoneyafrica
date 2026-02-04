@@ -4,6 +4,7 @@ import { User } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { ExternalLink, Upload, CheckCircle, Clock, XCircle, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import ImageUpload from "./ImageUpload";
 
 interface TasksListProps {
   user: User;
@@ -42,7 +43,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
   const [campaigns, setCampaigns] = useState<AvailableCampaign[]>([]);
   const [myTasks, setMyTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCampaign, setSelectedCampaign] = useState<AvailableCampaign | null>(null);
+  const [, setSelectedCampaign] = useState<AvailableCampaign | null>(null);
   const [uploading, setUploading] = useState(false);
   const [proofs, setProofs] = useState({
     follow: "",
@@ -93,7 +94,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
       }
 
       // Use secure RPC function to claim task
-      const { data, error } = await supabase.rpc("worker_claim_task", {
+      const { error } = await supabase.rpc("worker_claim_task", {
         p_campaign_id: campaign.id,
       });
 
@@ -269,68 +270,50 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                               <DialogTitle>Enviar Comprovantes</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-4 mt-4">
-                              <div>
-                                <label className="block text-sm font-medium text-foreground mb-2">
-                                  Print de Seguir *
-                                </label>
-                                <input
-                                  type="url"
-                                  value={proofs.follow}
-                                  onChange={(e) => setProofs({ ...proofs, follow: e.target.value })}
-                                  placeholder="Cole o link do print (Google Drive, Imgur, etc.)"
-                                  className="input-styled w-full"
-                                />
-                              </div>
+                              <ImageUpload
+                                userId={user.id}
+                                taskId={task.id}
+                                proofType="follow"
+                                label="Print de Seguir"
+                                required
+                                value={proofs.follow}
+                                onChange={(url) => setProofs({ ...proofs, follow: url })}
+                              />
 
                               {campaign?.plan_type === "kwanza" && (
                                 <>
-                                  <div>
-                                    <label className="block text-sm font-medium text-foreground mb-2">
-                                      Print de Curtir *
-                                    </label>
-                                    <input
-                                      type="url"
-                                      value={proofs.like}
-                                      onChange={(e) => setProofs({ ...proofs, like: e.target.value })}
-                                      placeholder="Cole o link do print"
-                                      className="input-styled w-full"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-medium text-foreground mb-2">
-                                      Print de Comentar *
-                                    </label>
-                                    <input
-                                      type="url"
-                                      value={proofs.comment}
-                                      onChange={(e) => setProofs({ ...proofs, comment: e.target.value })}
-                                      placeholder="Cole o link do print"
-                                      className="input-styled w-full"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-medium text-foreground mb-2">
-                                      Print de Partilhar *
-                                    </label>
-                                    <input
-                                      type="url"
-                                      value={proofs.share}
-                                      onChange={(e) => setProofs({ ...proofs, share: e.target.value })}
-                                      placeholder="Cole o link do print"
-                                      className="input-styled w-full"
-                                    />
-                                  </div>
+                                  <ImageUpload
+                                    userId={user.id}
+                                    taskId={task.id}
+                                    proofType="like"
+                                    label="Print de Curtir"
+                                    required
+                                    value={proofs.like}
+                                    onChange={(url) => setProofs({ ...proofs, like: url })}
+                                  />
+                                  <ImageUpload
+                                    userId={user.id}
+                                    taskId={task.id}
+                                    proofType="comment"
+                                    label="Print de Comentar"
+                                    required
+                                    value={proofs.comment}
+                                    onChange={(url) => setProofs({ ...proofs, comment: url })}
+                                  />
+                                  <ImageUpload
+                                    userId={user.id}
+                                    taskId={task.id}
+                                    proofType="share"
+                                    label="Print de Partilhar"
+                                    required
+                                    value={proofs.share}
+                                    onChange={(url) => setProofs({ ...proofs, share: url })}
+                                  />
                                 </>
                               )}
 
-                              <div className="bg-muted/50 p-3 rounded-lg">
-                                <p className="text-xs text-muted-foreground">
-                                  Dica: Use serviços como Google Drive, Dropbox ou Imgur para hospedar suas imagens e cole o link aqui.
-                                </p>
-                              </div>
-
                               <button
-                                onClick={() => submitProofs(task.id, campaign?.plan_type || "limao")}
+                                onClick={() => submitProofs(task.id, campaign?.plan_type || "ta_no_limao")}
                                 disabled={uploading}
                                 className="btn-primary w-full"
                               >
