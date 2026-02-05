@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Check, Zap, Star, MessageCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Zap, Star, MessageCircle, Clock } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 interface CreateCampaignProps {
   user: User;
@@ -107,6 +107,7 @@ const CreateCampaign = ({
 }: CreateCampaignProps) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState(120);
 
   // Form state
   const [planType, setPlanType] = useState<PlanType | null>(null);
@@ -115,6 +116,17 @@ const CreateCampaign = ({
   const [pageLink, setPageLink] = useState("");
   const [profileLink, setProfileLink] = useState("");
   const [videoLink, setVideoLink] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"iban" | "multicaixa">("iban");
+
+  // Countdown effect
+  useEffect(() => {
+    if (step === 5 && countdown > 0) {
+      const timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [step, countdown]);
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("pt-AO").format(price) + " Kz";
   };
@@ -144,8 +156,9 @@ const CreateCampaign = ({
         p_video_link: videoLink || null
       });
       if (error) throw error;
-      toast.success("Campanha criada com sucesso!");
-      onComplete();
+      
+      setStep(5);
+      toast.success("Campanha criada! Agora envie o comprovativo de pagamento.");
     } catch (error: any) {
       if (error.message?.includes("pending campaign")) {
         toast.error("Você já tem uma campanha pendente de pagamento");
@@ -158,16 +171,39 @@ const CreateCampaign = ({
       setLoading(false);
     }
   };
-  const whatsappNumber = "244923066682"; // Número do WhatsApp para pagamento
-  const whatsappMessage = encodeURIComponent(`Olá! Criei uma campanha no MMWL:\n\n` + `📦 Plano: ${planType === "limao" ? "Tá no Limão" : "Kwanza"} - ${selectedPlan?.name}\n` + `🎯 Meta: ${selectedPlan?.count} ${planType === "limao" ? "seguidores" : "ações"}\n` + `💰 Valor: ${formatPrice(selectedPlan?.price || 0)}\n` + `📱 Plataforma: ${PLATFORMS.find(p => p.id === platform)?.name}\n` + `🔗 Link: ${pageLink}\n\n` + `Gostaria de confirmar o pagamento.`);
+
+  const formatCountdown = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const getPaymentInstructions = () => {
+    if (paymentMethod === "iban") {
+      return `💳 Método de Pagamento: Transferência Bancária\n🏦 Banco: BAI\n📝 IBAN: AO06.0040.0000.8886.7584.1012.7\n👤 Titular: MMWL`;
+    }
+    return `📱 Método de Pagamento: Multicaixa Express\n📞 Número: 923 066 682\n👤 Entidade: MMWL`;
+  };
+
+  const whatsappNumber = "244923066682";
+  const whatsappMessage = encodeURIComponent(
+    `Olá! Criei uma campanha no MMWL e efetuei o pagamento:\n\n` +
+    `📦 Plano: ${planType === "limao" ? "Tá no Limão" : "Kwanza"} - ${selectedPlan?.name}\n` +
+    `🎯 Meta: ${selectedPlan?.count} ${planType === "limao" ? "seguidores" : "ações"}\n` +
+    `💰 Valor: ${formatPrice(selectedPlan?.price || 0)}\n` +
+    `📱 Plataforma: ${PLATFORMS.find(p => p.id === platform)?.name}\n` +
+    `🔗 Link: ${pageLink}\n\n` +
+    `${getPaymentInstructions()}\n\n` +
+    `📎 Segue o comprovativo de pagamento.`
+  );
   return <div className="max-w-4xl mx-auto">
       {/* Progress Steps */}
       <div className="flex items-center justify-between mb-8">
-        {[1, 2, 3, 4].map(s => <div key={s} className="flex items-center">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${step === s ? "bg-primary text-primary-foreground" : step > s ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
-              {step > s ? <Check className="w-5 h-5" /> : s}
+        {[1, 2, 3, 4, 5].map(s => <div key={s} className="flex items-center">
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold transition-all text-sm sm:text-base ${step === s ? "bg-primary text-primary-foreground" : step > s ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+              {step > s ? <Check className="w-4 h-4 sm:w-5 sm:h-5" /> : s}
             </div>
-            {s < 4 && <div className={`w-16 sm:w-24 h-1 mx-2 rounded ${step > s ? "bg-primary" : "bg-muted"}`} />}
+            {s < 5 && <div className={`w-8 sm:w-16 h-1 mx-1 sm:mx-2 rounded ${step > s ? "bg-primary" : "bg-muted"}`} />}
           </div>)}
       </div>
 
@@ -332,18 +368,35 @@ const CreateCampaign = ({
           </div>
         </div>}
 
-      {/* Step 4: Confirm & Pay */}
+      {/* Step 4: Choose Payment Method & Confirm */}
       {step === 4 && <div className="space-y-6">
           <div className="text-center mb-8">
             <h2 className="font-display text-2xl font-bold text-foreground mb-2">
-              Confirme sua Campanha
+              Método de Pagamento
             </h2>
             <p className="text-muted-foreground">
-              Revise os detalhes e prossiga para o pagamento via WhatsApp
+              Escolha como deseja efetuar o pagamento
             </p>
           </div>
 
-          <div className="card-elevated p-6 max-w-lg mx-auto">
+          <div className="grid sm:grid-cols-2 gap-4 max-w-lg mx-auto">
+            <button
+              onClick={() => setPaymentMethod("iban")}
+              className={`p-4 rounded-xl border-2 transition-all text-left ${paymentMethod === "iban" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}
+            >
+              <h4 className="font-semibold text-foreground">💳 Transferência Bancária</h4>
+              <p className="text-sm text-muted-foreground mt-1">IBAN - Banco BAI</p>
+            </button>
+            <button
+              onClick={() => setPaymentMethod("multicaixa")}
+              className={`p-4 rounded-xl border-2 transition-all text-left ${paymentMethod === "multicaixa" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}
+            >
+              <h4 className="font-semibold text-foreground">📱 Multicaixa Express</h4>
+              <p className="text-sm text-muted-foreground mt-1">Pagamento móvel</p>
+            </button>
+          </div>
+
+          <div className="card-elevated p-6 max-w-lg mx-auto mt-6">
             <h3 className="font-display font-bold text-lg text-foreground mb-4">
               Resumo da Campanha
             </h3>
@@ -367,12 +420,6 @@ const CreateCampaign = ({
                   {PLATFORMS.find(p => p.id === platform)?.name}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Link</span>
-                <span className="font-medium text-foreground text-sm truncate max-w-[200px]">
-                  {pageLink}
-                </span>
-              </div>
               <hr className="border-border" />
               <div className="flex justify-between text-lg">
                 <span className="font-semibold text-foreground">Total</span>
@@ -382,29 +429,107 @@ const CreateCampaign = ({
               </div>
             </div>
 
-            <div className="bg-muted/50 rounded-lg p-4 mb-6">
-              <p className="text-sm text-muted-foreground text-center">
-                Após criar a campanha, envie o comprovante de pagamento via WhatsApp para ativar sua campanha.
-              </p>
-            </div>
-
             <button onClick={handleSubmit} disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
               {loading ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : <>
                   <Check className="w-5 h-5" />
                   Criar Campanha
                 </>}
             </button>
-
-            {!loading && <a href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`} target="_blank" rel="noopener noreferrer" className="btn-gold w-full flex items-center justify-center gap-2 mt-3">
-                <MessageCircle className="w-5 h-5" />
-                Confirmar Pagamento via WhatsApp
-              </a>}
           </div>
 
           <div className="flex justify-center pt-6">
             <button onClick={() => setStep(3)} className="btn-secondary">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Voltar
+            </button>
+          </div>
+        </div>}
+
+      {/* Step 5: Payment Confirmation with Countdown */}
+      {step === 5 && <div className="space-y-6">
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
+              <Clock className="w-10 h-10 text-primary animate-pulse" />
+            </div>
+            <h2 className="font-display text-2xl font-bold text-foreground mb-2">
+              Aguardando Confirmação de Pagamento
+            </h2>
+            <p className="text-muted-foreground">
+              Envie o comprovativo de pagamento via WhatsApp para ativar sua campanha
+            </p>
+          </div>
+
+          <div className="text-center mb-6">
+            <div className={`text-5xl font-bold font-mono ${countdown <= 30 ? "text-destructive" : "text-primary"}`}>
+              {formatCountdown(countdown)}
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              {countdown > 0 ? "Tempo restante para enviar o comprovativo" : "Tempo esgotado - envie o comprovativo mesmo assim"}
+            </p>
+          </div>
+
+          <div className="card-elevated p-6 max-w-lg mx-auto">
+            <h3 className="font-display font-bold text-lg text-foreground mb-4">
+              {paymentMethod === "iban" ? "💳 Dados para Transferência" : "📱 Dados para Multicaixa Express"}
+            </h3>
+            
+            {paymentMethod === "iban" ? (
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Banco</span>
+                  <span className="font-medium text-foreground">BAI</span>
+                </div>
+                <div className="flex justify-between flex-wrap gap-1">
+                  <span className="text-muted-foreground">IBAN</span>
+                  <span className="font-medium text-foreground text-xs">AO06.0040.0000.8886.7584.1012.7</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Titular</span>
+                  <span className="font-medium text-foreground">MMWL</span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Número</span>
+                  <span className="font-medium text-foreground">923 066 682</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Entidade</span>
+                  <span className="font-medium text-foreground">MMWL</span>
+                </div>
+              </div>
+            )}
+
+            <hr className="border-border my-4" />
+
+            <div className="flex justify-between text-lg mb-4">
+              <span className="font-semibold text-foreground">Valor a pagar</span>
+              <span className="font-bold text-gradient-lime">
+                {formatPrice(selectedPlan?.price || 0)}
+              </span>
+            </div>
+
+            <div className="bg-muted/50 rounded-lg p-4 mb-4">
+              <p className="text-sm text-muted-foreground text-center">
+                📎 Clique no botão abaixo e envie o comprovativo de pagamento junto com a mensagem.
+              </p>
+            </div>
+
+            <a 
+              href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="btn-gold w-full flex items-center justify-center gap-2"
+            >
+              <MessageCircle className="w-5 h-5" />
+              Enviar Comprovativo via WhatsApp
+            </a>
+          </div>
+
+          <div className="flex justify-center pt-6">
+            <button onClick={onComplete} className="btn-secondary">
+              Voltar ao Dashboard
             </button>
           </div>
         </div>}
