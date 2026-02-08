@@ -24,10 +24,12 @@ const Navbar = () => {
       <div className="container-app">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-neon group-hover:scale-110 transition-transform duration-300">
-              <span className="font-display font-black text-primary-foreground transform group-hover:rotate-12 transition-transform">M</span>
-            </div>
+          <Link to="/" className="flex items-center gap-3 group">
+            <img
+              src="/logo.png"
+              alt="Make Money With Lima"
+              className="w-12 h-12 object-contain drop-shadow-neon group-hover:scale-110 transition-transform duration-300"
+            />
             <div className="flex flex-col">
               <span className="font-display font-black text-xl text-foreground leading-none tracking-tighter">
                 Make Money

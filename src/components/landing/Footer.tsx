@@ -12,10 +12,12 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-20">
           {/* Brand Column */}
           <div className="lg:col-span-2">
-            <Link to="/" className="flex items-center gap-3 mb-8 group">
-              <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-neon group-hover:rotate-12 transition-transform duration-500">
-                <span className="font-display font-black text-primary-foreground text-xl">M</span>
-              </div>
+            <Link to="/" className="flex items-center gap-4 mb-8 group">
+              <img
+                src="/logo.png"
+                alt="Logo"
+                className="w-14 h-14 object-contain drop-shadow-neon group-hover:rotate-6 transition-transform duration-500"
+              />
               <div className="flex flex-col">
                 <span className="font-display font-bold text-2xl text-foreground tracking-tighter">
                   Make Money

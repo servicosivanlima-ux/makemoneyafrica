@@ -50,9 +50,11 @@ const AdminSidebar = ({ onLogout, activeSection = "dashboard", onSectionChange }
 
       <div className="p-8 relative z-10">
         <div className="flex items-center gap-3 mb-10 group cursor-default">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-green-500 flex items-center justify-center shadow-neon shadow-primary/20 transition-all duration-500 group-hover:rotate-12">
-            <Shield className="w-6 h-6 text-primary-foreground" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="Logo"
+            className="w-10 h-10 object-contain drop-shadow-neon group-hover:rotate-12 transition-transform duration-500"
+          />
           <div>
             <span className="font-display font-black text-xl text-white tracking-tighter leading-none block">MMWL</span>
             <span className="text-[10px] font-black tracking-[0.3em] text-primary uppercase">Admin</span>

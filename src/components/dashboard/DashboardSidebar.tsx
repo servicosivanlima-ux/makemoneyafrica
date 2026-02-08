@@ -67,11 +67,13 @@ const DashboardSidebar = ({
   }];
   const SidebarContent = () => <>
     <div className="p-6">
-      <div className="flex items-center gap-2 mb-8">
-        <div className="w-9 h-9 rounded-lg bg-gradient-lime flex items-center justify-center">
-          <span className="font-display font-bold text-primary-foreground">M</span>
-        </div>
-        <span className="font-display font-bold text-lg text-foreground">MakeMoney</span>
+      <div className="flex items-center gap-3 mb-8">
+        <img
+          src="/logo.png"
+          alt="Logo"
+          className="w-10 h-10 object-contain drop-shadow-neon"
+        />
+        <span className="font-display font-bold text-lg text-foreground tracking-tighter">MakeMoney</span>
       </div>
 
       <nav className="space-y-1">
