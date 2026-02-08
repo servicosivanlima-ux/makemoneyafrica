@@ -3,14 +3,18 @@ import Hero from "@/components/landing/Hero";
 import HowItWorks from "@/components/landing/HowItWorks";
 import Navbar from "@/components/landing/Navbar";
 import Plans from "@/components/landing/Plans";
+import GainSimulator from "@/components/landing/GainSimulator";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <Navbar />
-      <Hero />
-      <HowItWorks />
-      <Plans />
+      <main className="flex flex-col">
+        <Hero />
+        <HowItWorks />
+        <GainSimulator />
+        <Plans />
+      </main>
       <Footer />
     </div>
   );

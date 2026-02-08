@@ -1,16 +1,25 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { User } from "@supabase/supabase-js";
 import { toast } from "sonner";
-import { 
-  CreditCard, 
-  Users, 
-  CheckSquare, 
+import {
+  CreditCard,
+  Users,
+  CheckSquare,
   Wallet,
   TrendingUp,
   AlertTriangle,
-  Clock
+  Clock,
+  Trash2,
+  Shield,
+  Bell,
+  FileText,
+  Settings,
+  PlusCircle,
+  MessageSquare
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminHeader from "@/components/admin/AdminHeader";
 import StatsCard from "@/components/admin/StatsCard";
@@ -18,6 +27,12 @@ import PaymentsTable from "@/components/admin/PaymentsTable";
 import TasksTable from "@/components/admin/TasksTable";
 import UsersTable from "@/components/admin/UsersTable";
 import WithdrawalsTable from "@/components/admin/WithdrawalsTable";
+import DepositsTable from "@/components/admin/DepositsTable";
+import CampaignsTable from "@/components/admin/CampaignsTable";
+import NotificationsManager from "@/components/admin/NotificationsManager";
+import KycTable from "@/components/admin/KycTable";
+import ChatModeration from "@/components/admin/ChatModeration";
+import WorkerChat from "@/components/dashboard/worker/WorkerChat";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface DashboardStats {
@@ -27,26 +42,33 @@ interface DashboardStats {
   totalUsers: number;
   activeCampaigns: number;
   totalRevenue: number;
+  pendingDeposits: number;
+  pendingKyc: number;
 }
 
 const Admin = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [userName, setUserName] = useState("Admin");
-  const [activeSection, setActiveSection] = useState("dashboard");
+  const [activeSection, setActiveSection] = useState<string>("dashboard");
   const [stats, setStats] = useState<DashboardStats>({
     pendingPayments: 0,
     pendingTasks: 0,
     pendingWithdrawals: 0,
     totalUsers: 0,
     activeCampaigns: 0,
-    totalRevenue: 0
+    totalRevenue: 0,
+    pendingDeposits: 0,
+    pendingKyc: 0
   });
   const [pendingCampaigns, setPendingCampaigns] = useState<any[]>([]);
   const [pendingTasks, setPendingTasks] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [pendingWithdrawals, setPendingWithdrawals] = useState<any[]>([]);
+  const [pendingKyc, setPendingKyc] = useState<any[]>([]);
 
   useEffect(() => {
     checkAdminAccess();
@@ -55,7 +77,7 @@ const Admin = () => {
   const checkAdminAccess = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         navigate("/auth");
         return;
@@ -75,9 +97,25 @@ const Admin = () => {
         return;
       }
 
+      if (!session.user.email_confirmed_at) {
+        toast.error("Por favor, confirme seu e-mail para acessar o painel administrativo.");
+        navigate("/auth");
+        return;
+      }
+
       setIsAdmin(true);
+      setUser(session.user);
       setUserName(session.user.user_metadata?.name || session.user.email?.split("@")[0] || "Admin");
-      
+
+      // Fetch admin profile
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .single();
+
+      setProfile(profileData);
+
       // Load dashboard data
       await loadDashboardData();
     } catch (error) {
@@ -130,7 +168,7 @@ const Admin = () => {
           .select("id, plan_type, plan_name, platform, page_link")
           .in("id", campaignIds);
 
-        const { data: workerProfiles } = workerIds.length > 0 
+        const { data: workerProfiles } = workerIds.length > 0
           ? await supabase.from("profiles").select("user_id, full_name, email").in("user_id", workerIds)
           : { data: [] };
 
@@ -142,10 +180,11 @@ const Admin = () => {
         setPendingTasks(tasksWithRelations);
       }
 
-      // Load all users
+      // Load all users (excluding admins from the general list)
       const { data: usersData, error: usersError } = await supabase
         .from("profiles")
         .select("*")
+        .neq("user_type", "admin")
         .order("created_at", { ascending: false });
 
       if (!usersError && usersData) {
@@ -164,7 +203,7 @@ const Admin = () => {
         const workerIds = [...new Set(withdrawalsData.map(w => w.worker_id))];
         const { data: workerProfiles } = await supabase
           .from("profiles")
-          .select("user_id, full_name, email, phone")
+          .select("user_id, full_name, email, phone, country, user_type, account_type")
           .in("user_id", workerIds);
 
         const withdrawalsWithWorkers = withdrawalsData.map(withdrawal => ({
@@ -187,18 +226,103 @@ const Admin = () => {
 
       const totalRevenue = revenueData?.reduce((sum, c) => sum + c.price, 0) || 0;
 
+      // New: Fetch total approved deposits data
+      const { data: depositsData } = await (supabase
+        .from("deposits" as any)
+        .select("amount")
+        .eq("status", "approved") as any);
+
+      const totalDepositsValue = depositsData?.reduce((sum, d) => sum + d.amount, 0) || 0;
+
+      // Calculate task costs (paid to workers)
+      const { data: taskCostsData } = await supabase
+        .from("tasks")
+        .select("reward_amount")
+        .eq("status", "approved");
+
+      const totalTaskCosts = taskCostsData?.reduce((sum, t) => sum + t.reward_amount, 0) || 0;
+
+      // Financial health is now Total Deposits - Total Task Costs (the liquid money in the system)
+      // or Total Revenue (from campaigns) + Deposits (non-spent) - Task Costs
+      // Let's use Total Approved Deposits (Total money entered) - Task Costs (Total money sent to workers)
+      const realProfit = totalDepositsValue - totalTaskCosts;
+
+      const { count: pendingDepositsCount } = await supabase
+        .from("deposits" as any)
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+
+      // Load pending KYC
+      const { data: kycData, error: kycError } = await (supabase
+        .from("kyc_documents" as any)
+        .select("*")
+        .order("created_at", { ascending: false }) as any);
+
+      if (!kycError && kycData) {
+        // Fetch profiles for the workers
+        const userIds = [...new Set((kycData as any[]).map(k => k.user_id as string))] as string[];
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, email")
+          .in("user_id", userIds);
+
+        const kycWithProfiles = kycData.map(kyc => ({
+          ...kyc,
+          profile: profilesData?.find(p => p.user_id === kyc.user_id) || null
+        }));
+        setPendingKyc(kycWithProfiles);
+      }
+
       setStats({
         pendingPayments: campaignsData?.length || 0,
         pendingTasks: tasksData?.length || 0,
         pendingWithdrawals: withdrawalsData?.length || 0,
         totalUsers: usersData?.length || 0,
         activeCampaigns: activeCampaignsCount || 0,
-        totalRevenue
+        totalRevenue: realProfit,
+        pendingDeposits: pendingDepositsCount || 0,
+        pendingKyc: kycData?.length || 0
       });
     } catch (error) {
       console.error("Error loading dashboard data:", error);
     }
   };
+
+  const handleResetSystem = async () => {
+    const confirmed = window.confirm(
+      "TEM A CERTEZA? Esta ação irá apagar TODAS as informações transacionais do sistema (campanhas, tarefas, pagamentos, saques, depósitos, mensagens de chat, etc.) e repor todos os saldos a zero. As contas de utilizadores e administradores serão preservadas. Esta ação não pode ser desfeita."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setLoading(true);
+      toast.info("Iniciando reset do sistema...");
+
+      const { data, error } = await supabase.rpc('system_cleanup_v2');
+
+      if (error) {
+        console.error("Error calling system_cleanup_v2:", error);
+        toast.error("Erro ao resetar o sistema: " + error.message);
+        return;
+      }
+
+      if (!data?.success) {
+        toast.error(data?.message || "Erro ao resetar o sistema");
+        return;
+      }
+
+      toast.success("Sistema resetado com sucesso!");
+      console.log("Cleanup details:", data.deleted_counts);
+      await loadDashboardData();
+    } catch (error) {
+      console.error("Error resetting system:", error);
+      toast.error("Erro ao resetar o sistema");
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -225,47 +349,87 @@ const Admin = () => {
     return null;
   }
 
-  const totalPending = stats.pendingPayments + stats.pendingTasks + stats.pendingWithdrawals;
+  const totalPending = stats.pendingPayments + stats.pendingTasks + stats.pendingWithdrawals + stats.pendingDeposits + stats.pendingKyc;
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminSidebar 
-        onLogout={handleLogout} 
+    <div className="min-h-screen bg-background bg-mesh-gradient selection:bg-primary/30">
+      <AdminSidebar
+        onLogout={handleLogout}
         activeSection={activeSection}
         onSectionChange={setActiveSection}
       />
 
-      <main className="lg:ml-64">
-        <AdminHeader 
-          title="Painel Administrativo" 
-          subtitle="Gerencie toda a plataforma"
+      <main className="lg:ml-64 relative min-h-screen">
+        {/* Animated Background Orbs */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 -right-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] animate-float" />
+          <div className="absolute -bottom-1/4 -left-1/4 w-[600px] h-[600px] bg-gold/5 rounded-full blur-[150px] animate-pulse" />
+        </div>
+
+        <AdminHeader
+          title={
+            activeSection === "dashboard" ? "Central de Comando" :
+              activeSection === "campanhas" ? "Gestão de Campanhas" :
+                activeSection === "pagamentos" ? "Aprovação de Pagamentos" :
+                  activeSection === "depositos" ? "Controle de Depósitos" :
+                    activeSection === "usuarios" ? "Gestão de Usuários" :
+                      activeSection === "saques" ? "Processamento de Saques" :
+                        activeSection === "tarefas" ? "Revisão de Tarefas" :
+                          activeSection === "verificacoes" ? "Verificação de Contas" :
+                            activeSection === "notificacoes" ? "Mensageria" :
+                              activeSection === "chat-moderacao" ? "Comunidade & Moderação" : "Administração"
+          }
+          subtitle={
+            activeSection === "dashboard" ? "MONITORAMENTO GLOBAL EM TEMPO REAL" :
+              activeSection === "notificacoes" ? "COMUNICAÇÃO MULTICANAL" :
+                "GESTÃO E CONTROLE OPERACIONAL"
+          }
           userName={userName}
-          pendingCount={totalPending}
+          stats={stats}
+          onNavigate={setActiveSection}
+          onToggleSidebar={() => { }} // Add sidebar toggle state if needed later
         />
 
-        <div className="p-6">
-          {/* Stats Grid */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="p-8 relative z-10">
+          {/* Main Highlights Section */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-8 bg-primary rounded-full shadow-neon" />
+              <h2 className="text-2xl font-black font-display text-white tracking-tight uppercase">Dashboard Executivo</h2>
+            </div>
+            <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl group transition-all hover:bg-white/10">
+              <Clock className="w-4 h-4 text-primary group-hover:rotate-12 transition-transform" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">Última atualização: agora</span>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             <StatsCard
-              title="Pagamentos Pendentes"
+              title="Campanhas por Ativar"
               value={stats.pendingPayments}
               icon={CreditCard}
               variant={stats.pendingPayments > 0 ? "warning" : "default"}
             />
             <StatsCard
-              title="Tarefas para Revisar"
+              title="Validação de Tarefas"
               value={stats.pendingTasks}
               icon={CheckSquare}
               variant={stats.pendingTasks > 0 ? "warning" : "default"}
             />
             <StatsCard
-              title="Saques Pendentes"
+              title="Tesouraria / Saques"
               value={stats.pendingWithdrawals}
               icon={Wallet}
               variant={stats.pendingWithdrawals > 0 ? "warning" : "default"}
             />
             <StatsCard
-              title="Total Usuários"
+              title="Depósitos Pendentes"
+              value={stats.pendingDeposits}
+              icon={PlusCircle}
+              variant={stats.pendingDeposits > 0 ? "warning" : "default"}
+            />
+            <StatsCard
+              title="Ecossistema / Usuários"
               value={stats.totalUsers}
               icon={Users}
               variant="default"
@@ -273,197 +437,317 @@ const Admin = () => {
           </div>
 
           {/* Secondary Stats */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-            <StatsCard
-              title="Campanhas Ativas"
-              value={stats.activeCampaigns}
-              icon={TrendingUp}
-              variant="success"
-            />
-            <StatsCard
-              title="Receita Total"
-              value={formatPrice(stats.totalRevenue)}
-              icon={Wallet}
-              variant="success"
-            />
-            <StatsCard
-              title="Ações Pendentes"
-              value={totalPending}
-              icon={totalPending > 0 ? AlertTriangle : Clock}
-              variant={totalPending > 0 ? "danger" : "default"}
-            />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            <div className="card-premium-glow p-8 overflow-hidden group">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all" />
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary">
+                  <TrendingUp className="w-6 h-6" />
+                </div>
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Impacto de Mercado</h3>
+              </div>
+              <p className="text-4xl font-black font-display text-white">{stats.activeCampaigns}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary mt-2">Campanhas em Execução</p>
+            </div>
+
+            <div className="card-premium-glow p-8 overflow-hidden group border-gold/20">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-gold/10 rounded-full blur-2xl group-hover:bg-gold/20 transition-all" />
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 rounded-2xl bg-gold/10 border border-gold/20 text-gold">
+                  <Wallet className="w-6 h-6" />
+                </div>
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Saúde Financeira</h3>
+              </div>
+              <p className="text-4xl font-black font-display text-white">{formatPrice(stats.totalRevenue)}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gold mt-2">Patrimônio Líquido Acumulado</p>
+            </div>
+
+            <div className="card-premium-glow p-8 overflow-hidden group border-red-500/20">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-red-500/10 rounded-full blur-2xl group-hover:bg-red-500/20 transition-all" />
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Centro de Alertas</h3>
+              </div>
+              <p className="text-4xl font-black font-display text-white">{totalPending}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-red-500 mt-2">Requisições de Alta Criticidade</p>
+            </div>
           </div>
 
           {/* Main Content based on active section */}
           {activeSection === "dashboard" && (
-            <Tabs defaultValue="payments" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="payments" className="relative">
-                  Pagamentos
-                  {stats.pendingPayments > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                      {stats.pendingPayments}
-                    </span>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="tasks" className="relative">
-                  Tarefas
-                  {stats.pendingTasks > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                      {stats.pendingTasks}
-                    </span>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="withdrawals" className="relative">
-                  Saques
-                  {stats.pendingWithdrawals > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                      {stats.pendingWithdrawals}
-                    </span>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="users">Usuários</TabsTrigger>
-              </TabsList>
+            <div className="card-premium-glow p-1 border-white/5 backdrop-blur-3xl overflow-hidden mb-8">
+              <Tabs defaultValue="payments" className="w-full">
+                <TabsList className="grid w-full grid-cols-4 bg-white/5 p-1.5 h-auto rounded-xl">
+                  <TabsTrigger
+                    value="payments"
+                    className="relative py-3 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-black uppercase tracking-widest text-[10px] transition-all"
+                  >
+                    Investimentos
+                    {stats.pendingPayments > 0 && (
+                      <span className="ml-2 px-1.5 py-0.5 bg-background/20 rounded-md text-[9px]">
+                        {stats.pendingPayments}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="tasks"
+                    className="relative py-3 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-black uppercase tracking-widest text-[10px] transition-all"
+                  >
+                    Operações
+                    {stats.pendingTasks > 0 && (
+                      <span className="ml-2 px-1.5 py-0.5 bg-background/20 rounded-md text-[9px]">
+                        {stats.pendingTasks}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="withdrawals"
+                    className="relative py-3 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-black uppercase tracking-widest text-[10px] transition-all"
+                  >
+                    Liquidações
+                    {stats.pendingWithdrawals > 0 && (
+                      <span className="ml-2 px-1.5 py-0.5 bg-background/20 rounded-md text-[9px]">
+                        {stats.pendingWithdrawals}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="deposits"
+                    className="relative py-3 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-black uppercase tracking-widest text-[10px] transition-all"
+                  >
+                    Recargas
+                    {stats.pendingDeposits > 0 && (
+                      <span className="ml-2 px-1.5 py-0.5 bg-background/20 rounded-md text-[9px]">
+                        {stats.pendingDeposits}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="payments">
-                <div className="space-y-4">
-                  <h2 className="text-lg font-display font-bold text-foreground">
-                    Pagamentos Pendentes de Aprovação
-                  </h2>
-                  <PaymentsTable 
-                    campaigns={pendingCampaigns} 
-                    onRefresh={loadDashboardData} 
-                  />
-                </div>
-              </TabsContent>
+                <div className="p-6">
+                  <TabsContent value="payments">
+                    <div className="space-y-4">
+                      <h2 className="text-lg font-display font-bold text-foreground">
+                        Pagamentos Pendentes de Aprovação
+                      </h2>
+                      <PaymentsTable
+                        campaigns={pendingCampaigns}
+                        onRefresh={loadDashboardData}
+                      />
+                    </div>
+                  </TabsContent>
 
-              <TabsContent value="tasks">
-                <div className="space-y-4">
-                  <h2 className="text-lg font-display font-bold text-foreground">
-                    Tarefas Aguardando Revisão
-                  </h2>
-                  <TasksTable 
-                    tasks={pendingTasks} 
-                    onRefresh={loadDashboardData} 
-                  />
-                </div>
-              </TabsContent>
+                  <TabsContent value="tasks">
+                    <div className="space-y-4">
+                      <h2 className="text-lg font-display font-bold text-foreground">
+                        Tarefas Aguardando Revisão
+                      </h2>
+                      <TasksTable
+                        tasks={pendingTasks}
+                        onRefresh={loadDashboardData}
+                      />
+                    </div>
+                  </TabsContent>
 
-              <TabsContent value="withdrawals">
-                <div className="space-y-4">
-                  <h2 className="text-lg font-display font-bold text-foreground">
-                    Saques Pendentes
-                  </h2>
-                  <WithdrawalsTable 
-                    withdrawals={pendingWithdrawals} 
-                    onRefresh={loadDashboardData} 
-                  />
-                </div>
-              </TabsContent>
+                  <TabsContent value="withdrawals">
+                    <div className="space-y-4">
+                      <h2 className="text-lg font-display font-bold text-foreground">
+                        Saques Pendentes
+                      </h2>
+                      <WithdrawalsTable
+                        withdrawals={pendingWithdrawals}
+                        onRefresh={loadDashboardData}
+                      />
+                    </div>
+                  </TabsContent>
 
-              <TabsContent value="users">
-                <div className="space-y-4">
-                  <h2 className="text-lg font-display font-bold text-foreground">
-                    Gestão de Usuários
-                  </h2>
-                  <UsersTable 
-                    users={users} 
-                    onRefresh={loadDashboardData} 
-                  />
+                  <TabsContent value="deposits">
+                    <div className="space-y-4">
+                      <h2 className="text-lg font-display font-bold text-foreground">
+                        Solicitações de Depósito
+                      </h2>
+                      <DepositsTable />
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="users">
+                    <div className="space-y-4">
+                      <h2 className="text-lg font-display font-bold text-foreground">
+                        Gestão de Usuários
+                      </h2>
+                      <UsersTable
+                        users={users}
+                        onRefresh={loadDashboardData}
+                      />
+                    </div>
+                  </TabsContent>
                 </div>
-              </TabsContent>
-            </Tabs>
+              </Tabs>
+            </div>
+          )}
+
+          {activeSection === "campanhas" && (
+            <div className="card-premium-glow p-8 mb-8">
+              <h2 className="text-lg font-display font-black text-white uppercase tracking-widest mb-6">
+                Gestão de Campanhas
+              </h2>
+              <CampaignsTable />
+            </div>
+          )}
+
+          {activeSection === "depositos" && (
+            <div className="card-premium-glow p-8 mb-8">
+              <h2 className="text-lg font-display font-black text-white uppercase tracking-widest mb-6">
+                Aprovação de Saldo
+              </h2>
+              <DepositsTable />
+            </div>
           )}
 
           {activeSection === "pagamentos" && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-display font-bold text-foreground">
-                Pagamentos Pendentes de Aprovação
+            <div className="card-premium-glow p-8 mb-8">
+              <h2 className="text-lg font-display font-black text-white uppercase tracking-widest mb-6">
+                Pagamentos de Clientes
               </h2>
-              <PaymentsTable 
-                campaigns={pendingCampaigns} 
-                onRefresh={loadDashboardData} 
+              <PaymentsTable
+                campaigns={pendingCampaigns}
+                onRefresh={loadDashboardData}
               />
             </div>
           )}
 
           {activeSection === "tarefas" && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-display font-bold text-foreground">
-                Tarefas Aguardando Revisão
+            <div className="card-premium-glow p-8 mb-8">
+              <h2 className="text-lg font-display font-black text-white uppercase tracking-widest mb-6">
+                Controle de Qualidade
               </h2>
-              <TasksTable 
-                tasks={pendingTasks} 
-                onRefresh={loadDashboardData} 
+              <TasksTable
+                tasks={pendingTasks}
+                onRefresh={loadDashboardData}
               />
             </div>
           )}
 
           {activeSection === "usuarios" && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-display font-bold text-foreground">
-                Gestão de Usuários
+            <div className="card-premium-glow p-8 mb-8">
+              <h2 className="text-lg font-display font-black text-white uppercase tracking-widest mb-6">
+                Banco de Talentos
               </h2>
-              <UsersTable 
-                users={users} 
-                onRefresh={loadDashboardData} 
+              <UsersTable
+                users={users}
+                onRefresh={loadDashboardData}
               />
             </div>
           )}
 
           {activeSection === "saques" && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-display font-bold text-foreground">
-                Saques Pendentes
+            <div className="card-premium-glow p-8 mb-8">
+              <h2 className="text-lg font-display font-black text-white uppercase tracking-widest mb-6">
+                Processamento Financeiro
               </h2>
-              <WithdrawalsTable 
-                withdrawals={pendingWithdrawals} 
-                onRefresh={loadDashboardData} 
+              <WithdrawalsTable
+                withdrawals={pendingWithdrawals}
+                onRefresh={loadDashboardData}
+              />
+            </div>
+          )}
+
+          {activeSection === "verificacoes" && (
+            <div className="card-premium-glow p-8 mb-8">
+              <h2 className="text-lg font-display font-black text-white uppercase tracking-widest mb-6">
+                Manual KYC / Validação de Identidade
+              </h2>
+              <KycTable
+                kycDocuments={pendingKyc}
+                onRefresh={loadDashboardData}
               />
             </div>
           )}
 
           {activeSection === "antifraude" && (
-            <div className="card-elevated p-6">
-              <h2 className="text-lg font-display font-bold text-foreground mb-4">
-                Sistema Antifraude
+            <div className="card-premium-glow p-8 mb-8">
+              <h2 className="text-lg font-display font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                <Shield className="w-6 h-6 text-primary" />
+                Inteligência Antifraude
               </h2>
-              <p className="text-muted-foreground">
-                Gerencie dispositivos bloqueados e detecte fraudes.
+              <p className="text-muted-foreground mt-2">
+                Monitoramento de dispositivos bloqueados e padrões de comportamento suspeitos.
               </p>
+            </div>
+          )}
+
+          {activeSection === "chat-moderacao" && (
+            <div className="space-y-8">
+              <div className="card-premium-glow p-8">
+                <h2 className="text-lg font-display font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <Shield className="w-6 h-6 text-primary" />
+                  Moderação do Chat
+                </h2>
+                <ChatModeration />
+              </div>
+
+              <div className="card-premium-glow p-8">
+                <h2 className="text-lg font-display font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <MessageSquare className="w-6 h-6 text-primary" />
+                  Chat em Tempo Real
+                </h2>
+                <WorkerChat user={user} profile={profile} />
+              </div>
             </div>
           )}
 
           {activeSection === "notificacoes" && (
-            <div className="card-elevated p-6">
-              <h2 className="text-lg font-display font-bold text-foreground mb-4">
-                Notificações
+            <div className="card-premium-glow p-8 mb-8">
+              <h2 className="text-lg font-display font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                <Bell className="w-6 h-6 text-primary" />
+                Central de Notificações
               </h2>
-              <p className="text-muted-foreground">
-                Gerencie notificações do sistema.
-              </p>
+              <NotificationsManager />
             </div>
           )}
 
           {activeSection === "registros" && (
-            <div className="card-elevated p-6">
-              <h2 className="text-lg font-display font-bold text-foreground mb-4">
-                Registros
+            <div className="card-premium-glow p-8 mb-8">
+              <h2 className="text-lg font-display font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                <FileText className="w-6 h-6 text-primary" />
+                Logs do Sistema
               </h2>
-              <p className="text-muted-foreground">
-                Visualize logs e atividades do sistema.
+              <p className="text-muted-foreground mt-2">
+                Rastreabilidade completa de ações e auditoria técnica.
               </p>
             </div>
           )}
 
           {activeSection === "configuracoes" && (
-            <div className="card-elevated p-6">
-              <h2 className="text-lg font-display font-bold text-foreground mb-4">
-                Configurações
+            <div className="card-premium-glow p-8 mb-8 border-red-500/20">
+              <h2 className="text-lg font-display font-black text-white uppercase tracking-widest mb-2 flex items-center gap-2">
+                <Settings className="w-6 h-6 text-primary" />
+                Configurações Críticas
               </h2>
-              <p className="text-muted-foreground">
-                Configure opções do painel administrativo.
+              <p className="text-muted-foreground mb-8">
+                Parâmetros globais e manutenção da infraestrutura.
               </p>
+
+              <div className="pt-8 border-t border-white/5">
+                <h3 className="text-md font-display font-black text-red-500 mb-2 flex items-center gap-2 uppercase tracking-tighter">
+                  <AlertTriangle className="w-5 h-5" />
+                  ZONA DE RISCO MÁXIMO
+                </h3>
+                <p className="text-sm text-muted-foreground mb-6">
+                  A limpeza total do sistema apagará todas as campanhas, tarefas, depósitos, saques, mensagens de chat e registos operacionais. Os saldos serão repostos a zero.
+                  <strong className="text-red-400 block mt-1">AS CONTAS DE UTILIZADORES E ADMINISTRADORES SERÃO PRESERVADAS. ESTA AÇÃO NÃO PODE SER DESFEITA.</strong>
+                </p>
+                <Button
+                  variant="destructive"
+                  onClick={handleResetSystem}
+                  className="bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all px-8 rounded-xl font-bold uppercase tracking-widest text-[10px]"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Resetar Ecossistema
+                </Button>
+              </div>
             </div>
           )}
         </div>

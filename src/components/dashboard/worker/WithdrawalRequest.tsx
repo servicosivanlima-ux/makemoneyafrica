@@ -27,12 +27,12 @@ const WithdrawalRequest = ({ user, balance, onWithdrawalComplete }: WithdrawalRe
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  
+
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<"iban" | "multicaixa">("multicaixa");
   const [details, setDetails] = useState("");
 
-  const MIN_WITHDRAWAL = 500;
+  const MIN_WITHDRAWAL = 1000;
 
   useEffect(() => {
     loadWithdrawals();
@@ -58,7 +58,7 @@ const WithdrawalRequest = ({ user, balance, onWithdrawalComplete }: WithdrawalRe
 
   const handleSubmit = async () => {
     const amountNum = parseInt(amount);
-    
+
     if (isNaN(amountNum) || amountNum < MIN_WITHDRAWAL) {
       toast.error(`O valor mínimo de saque é ${MIN_WITHDRAWAL} Kz`);
       return;
@@ -178,18 +178,18 @@ const WithdrawalRequest = ({ user, balance, onWithdrawalComplete }: WithdrawalRe
               Saque mínimo: {formatPrice(MIN_WITHDRAWAL)}
             </p>
           </div>
-          
+
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <button 
+              <button
                 className={canWithdraw ? "btn-gold" : "btn-secondary opacity-50"}
                 disabled={!canWithdraw}
               >
-                {balance < MIN_WITHDRAWAL 
-                  ? "Saldo insuficiente" 
+                {balance < MIN_WITHDRAWAL
+                  ? "Saldo insuficiente"
                   : withdrawals.some(w => w.status === "pending")
-                  ? "Saque pendente"
-                  : "Solicitar Saque"}
+                    ? "Saque pendente"
+                    : "Solicitar Saque"}
               </button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
@@ -223,22 +223,20 @@ const WithdrawalRequest = ({ user, balance, onWithdrawalComplete }: WithdrawalRe
                     <button
                       type="button"
                       onClick={() => setMethod("multicaixa")}
-                      className={`p-3 rounded-lg border-2 transition-all ${
-                        method === "multicaixa"
+                      className={`p-3 rounded-lg border-2 transition-all ${method === "multicaixa"
                           ? "border-primary bg-primary/10"
                           : "border-border hover:border-primary/50"
-                      }`}
+                        }`}
                     >
                       <span className="font-medium text-foreground">Multicaixa Express</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setMethod("iban")}
-                      className={`p-3 rounded-lg border-2 transition-all ${
-                        method === "iban"
+                      className={`p-3 rounded-lg border-2 transition-all ${method === "iban"
                           ? "border-primary bg-primary/10"
                           : "border-border hover:border-primary/50"
-                      }`}
+                        }`}
                     >
                       <span className="font-medium text-foreground">IBAN</span>
                     </button>
@@ -287,7 +285,7 @@ const WithdrawalRequest = ({ user, balance, onWithdrawalComplete }: WithdrawalRe
         <h2 className="font-display font-bold text-lg text-foreground mb-4">
           Histórico de Saques
         </h2>
-        
+
         {withdrawals.length === 0 ? (
           <div className="card-elevated p-6 text-center">
             <Wallet className="w-12 h-12 text-muted-foreground mx-auto mb-4" />

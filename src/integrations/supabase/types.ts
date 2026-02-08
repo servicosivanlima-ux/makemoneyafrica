@@ -46,6 +46,7 @@ export type Database = {
           id: string
           page_link: string
           payment_confirmed_at: string | null
+          payment_proof_url: string | null
           plan_name: string
           plan_type: Database["public"]["Enums"]["plan_type"]
           platform: Database["public"]["Enums"]["platform_type"]
@@ -63,6 +64,7 @@ export type Database = {
           id?: string
           page_link: string
           payment_confirmed_at?: string | null
+          payment_proof_url?: string | null
           plan_name: string
           plan_type: Database["public"]["Enums"]["plan_type"]
           platform: Database["public"]["Enums"]["platform_type"]
@@ -92,6 +94,36 @@ export type Database = {
         }
         Relationships: []
       }
+      deposits: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string
+          id: string
+          payment_proof_url: string
+          status: Database["public"]["Enums"]["deposit_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          created_at?: string
+          id?: string
+          payment_proof_url: string
+          status?: Database["public"]["Enums"]["deposit_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          id?: string
+          payment_proof_url?: string
+          status?: Database["public"]["Enums"]["deposit_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -100,14 +132,16 @@ export type Database = {
           message: string
           title: string
           user_id: string
+          link: string | null
         }
         Insert: {
           created_at?: string
           id?: string
-          is_read?: boolean | null
+          is_read: boolean | null
           message: string
           title: string
           user_id: string
+          link: string | null
         }
         Update: {
           created_at?: string
@@ -116,6 +150,7 @@ export type Database = {
           message?: string
           title?: string
           user_id?: string
+          link?: string | null
         }
         Relationships: []
       }
@@ -124,6 +159,7 @@ export type Database = {
           account_type: string | null
           blocked_reason: string | null
           company_name: string | null
+          country: string | null
           created_at: string
           device_hash: string | null
           email: string
@@ -132,6 +168,7 @@ export type Database = {
           id: string
           instagram_link: string | null
           is_blocked: boolean | null
+          nif: string | null
           phone: string
           tiktok_link: string | null
           updated_at: string
@@ -139,12 +176,14 @@ export type Database = {
           user_type: string
           withdrawal_details: string | null
           withdrawal_method: string | null
+          wallet_balance: number | null
           youtube_link: string | null
         }
         Insert: {
           account_type?: string | null
           blocked_reason?: string | null
           company_name?: string | null
+          country?: string | null
           created_at?: string
           device_hash?: string | null
           email: string
@@ -153,6 +192,7 @@ export type Database = {
           id?: string
           instagram_link?: string | null
           is_blocked?: boolean | null
+          nif?: string | null
           phone: string
           tiktok_link?: string | null
           updated_at?: string
@@ -160,12 +200,14 @@ export type Database = {
           user_type: string
           withdrawal_details?: string | null
           withdrawal_method?: string | null
+          wallet_balance?: number | null
           youtube_link?: string | null
         }
         Update: {
           account_type?: string | null
           blocked_reason?: string | null
           company_name?: string | null
+          country?: string | null
           created_at?: string
           device_hash?: string | null
           email?: string
@@ -174,6 +216,7 @@ export type Database = {
           id?: string
           instagram_link?: string | null
           is_blocked?: boolean | null
+          nif?: string | null
           phone?: string
           tiktok_link?: string | null
           updated_at?: string
@@ -181,6 +224,7 @@ export type Database = {
           user_type?: string
           withdrawal_details?: string | null
           withdrawal_method?: string | null
+          wallet_balance?: number | null
           youtube_link?: string | null
         }
         Relationships: []
@@ -381,9 +425,18 @@ export type Database = {
         Args: { p_reason: string; p_withdrawal_id: string }
         Returns: boolean
       }
+      admin_approve_deposit: {
+        Args: { p_deposit_id: string }
+        Returns: boolean
+      }
+      admin_reject_deposit: {
+        Args: { p_deposit_id: string }
+        Returns: boolean
+      }
       create_campaign_secure: {
         Args: {
           p_page_link: string
+          p_payment_proof_url: string
           p_plan_name: string
           p_plan_type: string
           p_platform: string
@@ -391,6 +444,22 @@ export type Database = {
           p_video_link?: string
         }
         Returns: string
+      }
+      delete_item_immediately: {
+        Args: {
+          p_item_id: string
+          p_type: string
+        }
+        Returns: boolean
+      }
+      delete_user_v3: {
+        Args: {
+          target_id_text: string
+        }
+        Returns: {
+          success: boolean
+          message?: string
+        }
       }
       get_user_profile: {
         Args: { _user_id: string }
@@ -433,15 +502,16 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "client" | "worker"
+      deposit_status: "pending" | "approved" | "rejected"
       campaign_status: "pending_payment" | "active" | "completed" | "cancelled"
       plan_type: "ta_no_limao" | "kwanza"
       platform_type: "facebook" | "instagram" | "tiktok" | "youtube"
       task_status:
-        | "available"
-        | "in_progress"
-        | "pending_review"
-        | "approved"
-        | "rejected"
+      | "available"
+      | "in_progress"
+      | "pending_review"
+      | "approved"
+      | "rejected"
       withdrawal_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
@@ -456,121 +526,122 @@ type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
-    ? R
-    : never
+  ? R
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
+    DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] &
+    DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+  ? R
+  : never
+  : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
+    Insert: infer I
+  }
+  ? I
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Insert: infer I
+  }
+  ? I
+  : never
+  : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
+    Update: infer U
+  }
+  ? U
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Update: infer U
+  }
+  ? U
+  : never
+  : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Enums"]
+  | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["CompositeTypes"]
+  | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+  : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never
 
 export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "client", "worker"],
+      deposit_status: ["pending", "approved", "rejected"],
       campaign_status: ["pending_payment", "active", "completed", "cancelled"],
       plan_type: ["ta_no_limao", "kwanza"],
       platform_type: ["facebook", "instagram", "tiktok", "youtube"],

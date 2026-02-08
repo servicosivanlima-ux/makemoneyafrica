@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Eye, EyeOff, ArrowLeft, Briefcase, Wallet, Shield } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, Briefcase, Wallet, Shield, Loader2, ArrowRight, User, Lock, Mail, Smartphone, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { motion, AnimatePresence } from "framer-motion";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const emailSchema = z.string().email("Email inválido").max(255, "Email muito longo");
 const passwordSchema = z.string().min(6, "Mínimo 6 caracteres").max(72, "Senha muito longa");
@@ -13,26 +15,32 @@ const nameSchema = z.string().min(2, "Nome muito curto").max(100, "Nome muito lo
 const Auth = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
+
   const initialType = searchParams.get("type") || "client";
   const initialSignup = searchParams.get("signup") === "true";
-  
+
   const [isSignup, setIsSignup] = useState(initialSignup);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [userType, setUserType] = useState<"client" | "worker">(initialType as "client" | "worker");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+  const [step, setStep] = useState<"form" | "verification">("form");
+  const [otpCode, setOtpCode] = useState("");
+  const [isResettingPassword, setIsResettingPassword] = useState(searchParams.get("reset") === "true");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
   // Common fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  
+  const [country, setCountry] = useState("AO");
+  const [nif, setNif] = useState("");
+
   // Client specific
   const [accountType, setAccountType] = useState<"personal" | "company">("personal");
   const [pageName, setPageName] = useState("");
-  
+
   // Worker specific
   const [withdrawMethod, setWithdrawMethod] = useState<"iban" | "multicaixa">("iban");
   const [ibanBank, setIbanBank] = useState("");
@@ -45,63 +53,76 @@ const Auth = () => {
     youtube: "",
   });
 
+  const phoneConfigs: Record<string, { placeholder: string; label: string; prefix: string }> = {
+    AO: { placeholder: "9xx xxx xxx", label: "WhatsApp de Angola", prefix: "+244" },
+    PT: { placeholder: "9xx xxx xxx", label: "WhatsApp de Portugal", prefix: "+351" },
+    MZ: { placeholder: "8xx xxx xxx", label: "WhatsApp de Moçambique", prefix: "+258" },
+    BR: { placeholder: "(xx) 9xxxx-xxxx", label: "WhatsApp do Brasil", prefix: "+55" },
+  };
+
   useEffect(() => {
-    // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        // TODO: Redirect based on user role
-        navigate("/dashboard");
+        if (session.user.email_confirmed_at && !isResettingPassword) {
+          navigate("/dashboard");
+        }
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        navigate("/dashboard");
+        if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+          if (session.user.email_confirmed_at && !isResettingPassword) {
+            navigate("/dashboard");
+          }
+        }
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, isResettingPassword]);
+
+  useEffect(() => {
+    const savedEmail = sessionStorage.getItem("signup_email");
+    const savedStep = sessionStorage.getItem("signup_step") as "form" | "verification";
+    if (savedEmail) setEmail(savedEmail);
+    if (savedStep) setStep(savedStep);
+  }, []);
+
+  useEffect(() => {
+    if (email) sessionStorage.setItem("signup_email", email);
+    sessionStorage.setItem("signup_step", step);
+  }, [email, step]);
+
+  useEffect(() => {
+    if (isSignup && !isForgotPassword) {
+      const config = phoneConfigs[country];
+      if (config) {
+        const isCurrentlyEmptyOrPrefixOnly = !phone || phone.trim().startsWith("+");
+        if (isCurrentlyEmptyOrPrefixOnly) {
+          setPhone(config.prefix + " ");
+        }
+      }
+    }
+  }, [country, isSignup, isForgotPassword]);
 
   const validateForm = () => {
     try {
       emailSchema.parse(email);
-      
-      if (isForgotPassword) {
-        return true;
-      }
-      
+      if (isForgotPassword) return true;
       passwordSchema.parse(password);
-      
       if (isSignup) {
         nameSchema.parse(name);
         phoneSchema.parse(phone);
-        
         if (userType === "worker") {
-          // At least one social link required
-          const hasValidSocial = Object.values(socialLinks).some(link => link.trim().length > 0);
-          if (!hasValidSocial) {
-            toast.error("Adicione pelo menos uma rede social válida");
-            return false;
-          }
-          
-          if (withdrawMethod === "iban" && (!ibanBank || !ibanNumber)) {
-            toast.error("Preencha os dados bancários");
-            return false;
-          }
-          
-          if (withdrawMethod === "multicaixa" && !multicaixaNumber) {
-            toast.error("Preencha o número Multicaixa Express");
-            return false;
-          }
+          // No complex validation for workers at Level 0
+          return true;
         }
-        
         if (userType === "client" && !pageName.trim()) {
           toast.error("Preencha o nome da página ou empresa");
           return false;
         }
       }
-      
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -111,455 +132,462 @@ const Auth = () => {
     }
   };
 
-  const handleForgotPassword = async () => {
-    try {
-      emailSchema.parse(email);
-    } catch {
-      toast.error("Por favor, insira um email válido");
-      return;
-    }
-    
-    setLoading(true);
-    
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth?reset=true`,
-      });
-      
-      if (error) throw error;
-      
-      toast.success("Email de recuperação enviado! Verifique sua caixa de entrada.");
-      setIsForgotPassword(false);
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao enviar email de recuperação");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (isForgotPassword) {
-      await handleForgotPassword();
+      if (!email) {
+        toast.error("Por favor, insira seu e-mail.");
+        return;
+      }
+      setLoading(true);
+      try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth?reset=true`,
+        });
+        if (error) throw error;
+        toast.success("Link de recuperação enviado para seu e-mail!");
+        setIsForgotPassword(false);
+      } catch (error: any) {
+        toast.error(error.message);
+      } finally {
+        setLoading(false);
+      }
       return;
     }
-    
     if (!validateForm()) return;
-    
     setLoading(true);
-    
     try {
       if (isSignup) {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: `${window.location.origin}/auth`,
             data: {
-              name,
+              full_name: name,
               phone,
               user_type: userType,
               account_type: userType === "client" ? accountType : null,
               page_name: userType === "client" ? pageName : null,
-              withdraw_method: userType === "worker" ? withdrawMethod : null,
-              social_links: userType === "worker" ? socialLinks : null,
+              country,
+              nif: accountType === "company" ? nif : null,
             }
           }
         });
-        
-        if (error) throw error;
-        
         if (data.user) {
-          toast.success("Conta criada com sucesso! Faça login para continuar.");
-          setIsSignup(false);
+          if (data.session) {
+            toast.success("Cadastro realizado com sucesso!");
+            navigate("/dashboard");
+          } else {
+            setStep("verification");
+            toast.success("Quase lá! Enviamos um código de confirmação para seu e-mail.");
+          }
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (error) {
-          if (error.message.includes("Invalid login credentials")) {
-            toast.error("Email ou senha incorretos");
-          } else if (error.message.includes("Email not confirmed")) {
-            toast.error("Confirme seu email antes de fazer login");
-          } else {
-            toast.error(error.message);
-          }
-          return;
-        }
-        
-        toast.success("Login realizado com sucesso!");
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        toast.success("Login realizado!");
       }
     } catch (error: any) {
-      toast.error(error.message || "Erro ao processar solicitação");
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const hasValidSocialLink = Object.values(socialLinks).some(link => link.trim().length > 0);
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      toast.error("As senhas não coincidem.");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      toast.success("Senha atualizada com sucesso!");
+      navigate("/dashboard");
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otpCode.length < 6) {
+      toast.error("O código deve ter 6 dígitos.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: otpCode,
+        type: "signup",
+      });
+      if (error) throw error;
+      toast.success("Conta confirmada com sucesso!");
+      navigate("/dashboard");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao verificar código.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!email) {
+      toast.error("Email não encontrado.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth`,
+        }
+      });
+      if (error) throw error;
+      toast.success("Novo código/link enviado para seu e-mail.");
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4">
-      {/* Background effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gold/5 rounded-full blur-3xl" />
-      </div>
+    <div className="min-h-screen bg-background bg-mesh-gradient flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Decorative elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-gold/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="w-full max-w-lg relative z-10">
-        {/* Back button */}
-        <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          Voltar ao início
-        </Link>
+      <div className="w-full max-w-lg relative z-10 py-12">
+        <div className="flex items-center justify-between mb-8">
+          <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors group">
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span className="text-xs font-black uppercase tracking-widest">Início</span>
+          </Link>
+          <ThemeToggle />
+        </div>
 
-        <div className="card-elevated p-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="w-14 h-14 rounded-xl bg-gradient-lime flex items-center justify-center mx-auto mb-4">
-              <span className="font-display font-bold text-2xl text-primary-foreground">M</span>
-            </div>
-            <h1 className="font-display text-2xl font-bold text-foreground mb-2">
-              {isForgotPassword ? "Recuperar Senha" : isSignup ? "Criar Conta" : "Bem-vindo de Volta"}
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              {isForgotPassword 
-                ? "Insira seu email para receber o link de recuperação" 
-                : isSignup 
-                  ? "Preencha os dados para começar" 
-                  : "Entre para acessar sua conta"}
-            </p>
-          </div>
-
-          {/* User type selector (only for signup) */}
-          {isSignup && !isForgotPassword && (
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <button
-                type="button"
-                onClick={() => setUserType("client")}
-                className={`p-4 rounded-xl border transition-all duration-200 flex flex-col items-center gap-2 ${
-                  userType === "client"
-                    ? "border-primary bg-primary/10 shadow-glow"
-                    : "border-border hover:border-primary/30"
-                }`}
-              >
-                <Briefcase className={`w-6 h-6 ${userType === "client" ? "text-primary" : "text-muted-foreground"}`} />
-                <span className={`text-sm font-medium ${userType === "client" ? "text-foreground" : "text-muted-foreground"}`}>
-                  Cliente
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setUserType("worker")}
-                className={`p-4 rounded-xl border transition-all duration-200 flex flex-col items-center gap-2 ${
-                  userType === "worker"
-                    ? "border-gold bg-gold/10 shadow-[0_0_30px_hsl(45_93%_58%/0.15)]"
-                    : "border-border hover:border-gold/30"
-                }`}
-              >
-                <Wallet className={`w-6 h-6 ${userType === "worker" ? "text-gold" : "text-muted-foreground"}`} />
-                <span className={`text-sm font-medium ${userType === "worker" ? "text-foreground" : "text-muted-foreground"}`}>
-                  Trabalhador
-                </span>
-              </button>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="card-premium-glow p-8 md:p-10 relative overflow-hidden"
+        >
+          {loading && (
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-md">
+              <Loader2 className="w-10 h-10 text-primary animate-spin" />
+              <p className="mt-4 text-xs font-black uppercase tracking-[0.3em] text-primary">Processando</p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Common fields */}
-            {isSignup && !isForgotPassword && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Nome Completo</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="input-styled w-full"
-                    placeholder="Seu nome"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Telefone</label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="input-styled w-full"
-                    placeholder="+244 923 000 000"
-                    required
-                  />
-                </div>
-              </>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input-styled w-full"
-                placeholder="seu@email.com"
-                required
-              />
-            </div>
-
-            {!isForgotPassword && (
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Senha</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="input-styled w-full pr-10"
-                    placeholder="••••••••"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {!isSignup && (
-                  <button
-                    type="button"
-                    onClick={() => setIsForgotPassword(true)}
-                    className="text-sm text-primary hover:text-primary/80 mt-2 transition-colors"
-                  >
-                    Esqueceu a senha?
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Client specific fields */}
-            {isSignup && !isForgotPassword && userType === "client" && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Tipo de Conta</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setAccountType("personal")}
-                      className={`p-3 rounded-lg border text-sm transition-all ${
-                        accountType === "personal"
-                          ? "border-primary bg-primary/10 text-foreground"
-                          : "border-border text-muted-foreground hover:border-primary/30"
-                      }`}
-                    >
-                      Conta Própria
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAccountType("company")}
-                      className={`p-3 rounded-lg border text-sm transition-all ${
-                        accountType === "company"
-                          ? "border-primary bg-primary/10 text-foreground"
-                          : "border-border text-muted-foreground hover:border-primary/30"
-                      }`}
-                    >
-                      Empresa
-                    </button>
-                  </div>
+          <AnimatePresence mode="wait">
+            {isResettingPassword ? (
+              <motion.div
+                key="reset"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-8"
+              >
+                <div className="text-center">
+                  <h2 className="text-3xl font-black text-foreground mb-4">Nova Senha</h2>
+                  <p className="text-muted-foreground text-sm uppercase tracking-widest font-bold">Defina sua nova credencial de acesso</p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
-                    Nome da Página/Empresa
-                  </label>
-                  <input
-                    type="text"
-                    value={pageName}
-                    onChange={(e) => setPageName(e.target.value)}
-                    className="input-styled w-full"
-                    placeholder="Nome do seu negócio ou página"
-                    required
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Worker specific fields */}
-            {isSignup && !isForgotPassword && userType === "worker" && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Método de Saque</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setWithdrawMethod("iban")}
-                      className={`p-3 rounded-lg border text-sm transition-all ${
-                        withdrawMethod === "iban"
-                          ? "border-gold bg-gold/10 text-foreground"
-                          : "border-border text-muted-foreground hover:border-gold/30"
-                      }`}
-                    >
-                      IBAN Bancário
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setWithdrawMethod("multicaixa")}
-                      className={`p-3 rounded-lg border text-sm transition-all ${
-                        withdrawMethod === "multicaixa"
-                          ? "border-gold bg-gold/10 text-foreground"
-                          : "border-border text-muted-foreground hover:border-gold/30"
-                      }`}
-                    >
-                      Multicaixa Express
-                    </button>
-                  </div>
-                </div>
-
-                {withdrawMethod === "iban" && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1.5">Banco</label>
-                      <select
-                        value={ibanBank}
-                        onChange={(e) => setIbanBank(e.target.value)}
-                        className="input-styled w-full"
-                        required
-                      >
-                        <option value="">Selecione o banco</option>
-                        <option value="BFA">BFA</option>
-                        <option value="BIC">BIC</option>
-                        <option value="BANCO_SOL">Banco SOL</option>
-                        <option value="BAI">BAI</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1.5">Número IBAN</label>
+                <form onSubmit={handleUpdatePassword} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Nova Senha</label>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <input
-                        type="text"
-                        value={ibanNumber}
-                        onChange={(e) => setIbanNumber(e.target.value)}
-                        className="input-styled w-full"
-                        placeholder="AO06..."
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="input-premium pl-11 pr-11"
+                        placeholder="••••••••"
+                        required
+                      />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2">
+                        {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Confirmar Nova Senha</label>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="input-premium pl-11"
+                        placeholder="••••••••"
                         required
                       />
                     </div>
-                  </>
-                )}
-
-                {withdrawMethod === "multicaixa" && (
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1.5">
-                      Número Multicaixa Express
-                    </label>
-                    <input
-                      type="text"
-                      value={multicaixaNumber}
-                      onChange={(e) => setMulticaixaNumber(e.target.value)}
-                      className="input-styled w-full"
-                      placeholder="923 000 000"
-                      required
-                    />
                   </div>
-                )}
 
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
-                    Redes Sociais (mínimo 1)
-                  </label>
-                  <div className="space-y-2">
-                    <input
-                      type="url"
-                      value={socialLinks.facebook}
-                      onChange={(e) => setSocialLinks({ ...socialLinks, facebook: e.target.value })}
-                      className="input-styled w-full text-sm"
-                      placeholder="Link do Facebook"
-                    />
-                    <input
-                      type="url"
-                      value={socialLinks.instagram}
-                      onChange={(e) => setSocialLinks({ ...socialLinks, instagram: e.target.value })}
-                      className="input-styled w-full text-sm"
-                      placeholder="Link do Instagram"
-                    />
-                    <input
-                      type="url"
-                      value={socialLinks.tiktok}
-                      onChange={(e) => setSocialLinks({ ...socialLinks, tiktok: e.target.value })}
-                      className="input-styled w-full text-sm"
-                      placeholder="Link do TikTok"
-                    />
-                    <input
-                      type="url"
-                      value={socialLinks.youtube}
-                      onChange={(e) => setSocialLinks({ ...socialLinks, youtube: e.target.value })}
-                      className="input-styled w-full text-sm"
-                      placeholder="Link do YouTube"
-                    />
-                  </div>
-                  {!hasValidSocialLink && (
-                    <p className="text-xs text-destructive mt-1">Adicione pelo menos uma rede social</p>
-                  )}
+                  <button type="submit" className="btn-premium w-full h-16 text-lg">
+                    Atualizar Senha
+                  </button>
+                </form>
+              </motion.div>
+            ) : isForgotPassword ? (
+              <motion.div
+                key="forgot"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-8"
+              >
+                <div className="text-center">
+                  <h2 className="text-3xl font-black text-foreground mb-4">Recuperar Acesso</h2>
+                  <p className="text-muted-foreground text-sm leading-relaxed">Insira seu e-mail para receber um link de recuperação.</p>
                 </div>
-              </>
-            )}
 
-            {/* Submit button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full py-3 rounded-lg font-semibold transition-all duration-200 ${
-                userType === "worker" && isSignup && !isForgotPassword
-                  ? "btn-gold"
-                  : "btn-primary"
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              {loading 
-                ? "Processando..." 
-                : isForgotPassword 
-                  ? "Enviar Link de Recuperação" 
-                  : isSignup 
-                    ? "Criar Conta" 
-                    : "Entrar"}
-            </button>
-          </form>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Seu E-mail</label>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-premium pl-11" placeholder="exemplo@email.com" required />
+                    </div>
+                  </div>
 
-          {/* Toggle signup/login */}
-          <div className="mt-6 text-center">
-            {isForgotPassword ? (
-              <button
-                onClick={() => setIsForgotPassword(false)}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  <button type="submit" className="btn-premium w-full h-16 text-lg">
+                    Enviar Link de Recuperação
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotPassword(false)}
+                    className="w-full text-center text-xs font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    Voltar ao Login
+                  </button>
+                </form>
+              </motion.div>
+            ) : step === "verification" ? (
+              <motion.div
+                key="verify"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-8"
               >
-                <span className="text-primary font-medium">← Voltar ao login</span>
-              </button>
+                <div className="text-center">
+                  <h2 className="text-3xl font-black text-foreground mb-4">Verificação</h2>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    Enviamos um código para <span className="text-foreground font-bold">{email}</span>. Insira abaixo para ativar sua conta.
+                  </p>
+                </div>
+
+                <form onSubmit={handleVerifyOtp} className="space-y-6">
+                  <input
+                    type="text"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-center text-4xl tracking-[0.5em] font-black focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all outline-none"
+                    placeholder="000000"
+                    maxLength={6}
+                    required
+                  />
+                  <button type="submit" className="btn-premium w-full h-16 text-lg">
+                    Confirmar Conta
+                  </button>
+
+                  <div className="space-y-4 pt-4">
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      className="w-full text-center text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:underline transition-colors"
+                    >
+                      Não recebi o código ou link
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setStep("form")}
+                      className="w-full text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Voltar ao formulário
+                    </button>
+                  </div>
+                </form>
+                <div className="mt-8 p-4 rounded-xl bg-primary/5 border border-primary/10">
+                  <p className="text-[10px] text-center text-muted-foreground leading-relaxed">
+                    Dica: Se você recebeu um link de confirmação, pode clicar nele diretamente no seu e-mail.
+                  </p>
+                </div>
+              </motion.div>
             ) : (
-              <button
-                onClick={() => setIsSignup(!isSignup)}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              <motion.div
+                key="form"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
               >
-                {isSignup ? (
-                  <>Já tem uma conta? <span className="text-primary font-medium">Entrar</span></>
-                ) : (
-                  <>Não tem conta? <span className="text-primary font-medium">Criar conta</span></>
-                )}
-              </button>
-            )}
-          </div>
+                <div className="text-center mb-10">
+                  <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-6 shadow-neon">
+                    <span className="font-display font-black text-primary-foreground text-2xl">M</span>
+                  </div>
+                  <h1 className="text-3xl font-black text-foreground mb-3">
+                    {isSignup ? "Criar Conta" : "Entrar na Plataforma"}
+                  </h1>
+                  <p className="text-muted-foreground text-sm uppercase tracking-widest font-bold">
+                    {isSignup ? "Plataforma Nº1 em Angola" : "Bem-vindo de volta"}
+                  </p>
+                </div>
 
-          {/* Security notice */}
-          <div className="mt-6 p-3 rounded-lg bg-muted/50 flex items-start gap-2">
-            <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-muted-foreground">
-              Seus dados são protegidos com criptografia. Nunca compartilhamos suas informações.
-            </p>
-          </div>
-        </div>
+                {isSignup && !isForgotPassword && (
+                  <div className="grid grid-cols-2 gap-4 mb-8">
+                    <button
+                      type="button"
+                      onClick={() => setUserType("client")}
+                      className={`p-5 rounded-2xl border transition-all flex flex-col items-center gap-3 ${userType === "client" ? "glass-card-lime border-primary/50 shadow-neon" : "bg-white/5 border-white/5 hover:border-white/20"
+                        }`}
+                    >
+                      <Briefcase className={`w-6 h-6 ${userType === "client" ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Cliente</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUserType("worker")}
+                      className={`p-5 rounded-2xl border transition-all flex flex-col items-center gap-3 ${userType === "worker" ? "glass-card-gold border-gold/50 shadow-gold-premium" : "bg-white/5 border-white/5 hover:border-white/20"
+                        }`}
+                    >
+                      <Wallet className={`w-6 h-6 ${userType === "worker" ? "text-gold" : "text-muted-foreground"}`} />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Trabalhador</span>
+                    </button>
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {isSignup && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Primeiro e último nome</label>
+                      <div className="relative">
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="input-premium pl-11" placeholder="Seu nome" required />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Email</label>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-premium pl-11" placeholder="exemplo@email.com" required />
+                    </div>
+                  </div>
+
+                  {isSignup && !isForgotPassword && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">País</label>
+                        <div className="relative">
+                          <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <select
+                            value={country}
+                            onChange={(e) => setCountry(e.target.value)}
+                            className="input-premium pl-11 appearance-none cursor-pointer"
+                          >
+                            <option value="AO" className="bg-background">Angola (+244)</option>
+                            <option value="PT" className="bg-background">Portugal (+351)</option>
+                            <option value="BR" className="bg-background">Brasil (+55)</option>
+                            <option value="MZ" className="bg-background">Moçambique (+258)</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">WhatsApp</label>
+                        <div className="relative">
+                          <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <input
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            className="input-premium pl-11"
+                            placeholder={phoneConfigs[country]?.placeholder}
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Senha</label>
+                      {!isSignup && (
+                        <button type="button" onClick={() => setIsForgotPassword(true)} className="text-[9px] font-black uppercase text-primary hover:underline transition-colors">Esqueceu?</button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="input-premium pl-11 pr-11"
+                        placeholder="••••••••"
+                        required
+                      />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2">
+                        {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {isSignup && userType === "client" && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-6 pt-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Tipo de Conta</label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button type="button" onClick={() => setAccountType("personal")} className={`py-3 rounded-xl border text-[10px] font-black uppercase tracking-[0.1em] transition-all ${accountType === "personal" ? "bg-primary/20 border-primary text-primary" : "bg-white/5 border-white/5 text-muted-foreground"}`}>Pessoal</button>
+                          <button type="button" onClick={() => setAccountType("company")} className={`py-3 rounded-xl border text-[10px] font-black uppercase tracking-[0.1em] transition-all ${accountType === "company" ? "bg-primary/20 border-primary text-primary" : "bg-white/5 border-white/5 text-muted-foreground"}`}>Empresa</button>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Nome do Perfil/Empresa</label>
+                        <input type="text" value={pageName} onChange={(e) => setPageName(e.target.value)} className="input-premium" placeholder="Ex: GiraNotícias" required />
+                      </div>
+                    </motion.div>
+                  )}
+
+                  <button type="submit" className="btn-premium w-full h-16 text-lg flex items-center justify-center gap-3">
+                    {isSignup ? "Criar Minha Conta" : "Acessar Plataforma"}
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+
+                  <div className="text-center pt-4">
+                    <p className="text-sm text-muted-foreground">
+                      {isSignup ? "Já tem uma conta?" : "Não tem uma conta?"}{" "}
+                      <button
+                        type="button"
+                        onClick={() => setIsSignup(!isSignup)}
+                        className="text-primary font-black hover:underline"
+                      >
+                        {isSignup ? "Fazer Login" : "Cadastrar Agora"}
+                      </button>
+                    </p>
+                  </div>
+                </form>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
     </div>
   );

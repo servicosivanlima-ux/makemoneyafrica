@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, X, Eye, Loader2 } from "lucide-react";
+import { Check, X, Eye, Loader2, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -18,6 +18,7 @@ interface Campaign {
   price: number;
   status: string;
   page_link: string;
+  payment_proof_url: string | null;
   created_at: string;
   client: {
     full_name: string;
@@ -180,6 +181,17 @@ const PaymentsTable = ({ campaigns, onRefresh }: PaymentsTableProps) => {
                   </td>
                   <td className="px-4 py-4">
                     <div className="flex items-center justify-end gap-2">
+                      {campaign.payment_proof_url && (
+                        <a
+                          href={campaign.payment_proof_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
+                          title="Ver comprovativo"
+                        >
+                          <Upload className="w-4 h-4 text-primary" />
+                        </a>
+                      )}
                       <button
                         onClick={() => setSelectedCampaign(campaign)}
                         className="p-2 rounded-lg hover:bg-muted transition-colors"
@@ -254,15 +266,37 @@ const PaymentsTable = ({ campaigns, onRefresh }: PaymentsTableProps) => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Link da Página</p>
-                <a 
-                  href={selectedCampaign.page_link} 
-                  target="_blank" 
+                <a
+                  href={selectedCampaign.page_link}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline break-all"
                 >
                   {selectedCampaign.page_link}
                 </a>
               </div>
+              {selectedCampaign.payment_proof_url && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Comprovativo de Pagamento</p>
+                  <div className="rounded-lg border border-border overflow-hidden bg-muted/30">
+                    <img
+                      src={selectedCampaign.payment_proof_url}
+                      alt="Comprovativo de Pagamento"
+                      className="w-full h-auto max-h-[400px] object-contain mx-auto"
+                    />
+                    <div className="p-2 text-center border-t border-border">
+                      <a
+                        href={selectedCampaign.payment_proof_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Abrir em nova aba
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

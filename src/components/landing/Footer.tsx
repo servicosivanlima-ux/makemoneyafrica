@@ -1,69 +1,117 @@
-import { Facebook, Instagram, Youtube } from "lucide-react";
+import { Facebook, Music2, Youtube, Mail, MapPin, Send } from "lucide-react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+
 const Footer = () => {
-  return <footer className="bg-card border-t border-border py-12">
-      <div className="container-app">
-        <div className="grid md:grid-cols-4 gap-8 mb-8">
-          {/* Brand */}
-          <div className="md:col-span-2">
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-lime flex items-center justify-center">
-                <span className="font-display font-bold text-primary-foreground text-lg">M</span>
+  return (
+    <footer className="relative bg-background border-t border-white/5 pt-24 pb-12 overflow-hidden">
+      {/* Background Glow */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
+
+      <div className="container-app relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-20">
+          {/* Brand Column */}
+          <div className="lg:col-span-2">
+            <Link to="/" className="flex items-center gap-3 mb-8 group">
+              <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-neon group-hover:rotate-12 transition-transform duration-500">
+                <span className="font-display font-black text-primary-foreground text-xl">M</span>
               </div>
-              <span className="font-display font-bold text-xl text-foreground">Make Money With Lima</span>
+              <div className="flex flex-col">
+                <span className="font-display font-bold text-2xl text-foreground tracking-tighter">
+                  Make Money
+                </span>
+                <span className="text-[10px] uppercase tracking-[0.3em] text-primary font-black">With Lima</span>
+              </div>
             </Link>
-            <p className="text-muted-foreground text-sm max-w-md mb-4">A plataforma Nº 1 em Angola para crescimento de redes sociais. Seguro, confiável e rentável para todos.</p>
-            <div className="flex items-center gap-3">
-              <a href="https://web.facebook.com/profile.php?id=61586742401619" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center hover:bg-primary/20 transition-colors">
-                <Facebook className="w-4 h-4 text-muted-foreground" />
-              </a>
-              <a href="#" className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center hover:bg-primary/20 transition-colors">
-                <Instagram className="w-4 h-4 text-muted-foreground" />
-              </a>
-              <a href="#" className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center hover:bg-primary/20 transition-colors">
-                <Youtube className="w-4 h-4 text-muted-foreground" />
-              </a>
+            <p className="text-muted-foreground text-lg max-w-md mb-10 leading-relaxed">
+              A maior ponte tecnológica entre criadores e trabalhadores em Angola.
+              Transformando o engajamento digital em liberdade financeira real.
+            </p>
+            <div className="flex items-center gap-4">
+              {[
+                { icon: Facebook, link: "https://www.facebook.com/profile.php?id=61586742401619" },
+                { icon: Music2, link: "https://www.tiktok.com/@vemsaber.tv" },
+                { icon: Youtube, link: "https://www.youtube.com/@LetrasDigitais2026" },
+              ].map((social, i) => (
+                <a
+                  key={i}
+                  href={social.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-12 h-12 rounded-2xl glass-card border-white/5 flex items-center justify-center hover:bg-primary/20 hover:border-primary/40 transition-all duration-300 group"
+                >
+                  <social.icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                </a>
+              ))}
             </div>
           </div>
 
-          {/* Links */}
+          {/* Navigation */}
           <div>
-            <h4 className="font-display font-semibold text-foreground mb-4">Links Rápidos</h4>
-            <ul className="space-y-2">
-              <li><Link to="/#planos" className="text-muted-foreground hover:text-primary transition-colors text-sm">Planos</Link></li>
-              <li><Link to="/auth?type=client" className="text-muted-foreground hover:text-primary transition-colors text-sm">Criar Campanha</Link></li>
-              <li><Link to="/auth?type=worker" className="text-muted-foreground hover:text-primary transition-colors text-sm">Trabalhar e Ganhar</Link></li>
+            <h4 className="text-sm font-black text-foreground uppercase tracking-widest mb-8">Navegação</h4>
+            <ul className="space-y-4">
+              {[
+                { label: "Planos", path: "/#planos" },
+                { label: "Quero ser cliente", path: "/auth?type=client" },
+                { label: "Quero ser trabalhador", path: "/auth?type=worker" },
+                { label: "Simulador", path: "/#simulador" }
+              ].map((item) => (
+                <li key={item.label}>
+                  <Link
+                    to={item.path}
+                    className="text-muted-foreground hover:text-primary transition-colors text-sm font-medium flex items-center gap-2 group"
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/20 group-hover:bg-primary transition-colors" />
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Contact */}
+          {/* Legal & Local */}
           <div>
-            <h4 className="font-display font-semibold text-foreground mb-4">Contacto</h4>
-            <ul className="space-y-2">
-              <li className="text-muted-foreground text-sm">
-                WhatsApp: <span className="text-primary">+244 923 066 682</span>
+            <h4 className="text-sm font-black text-foreground uppercase tracking-widest mb-8">Suporte & Legal</h4>
+            <ul className="space-y-4 mb-8">
+              <li>
+                <Link to="/termos#aceitacao" className="text-muted-foreground hover:text-primary transition-colors text-sm font-medium">Termos de Uso</Link>
               </li>
-              <li className="text-muted-foreground text-sm">
-                Luanda, Angola
+              <li>
+                <Link to="/termos#privacidade" className="text-muted-foreground hover:text-primary transition-colors text-sm font-medium">Privacidade</Link>
               </li>
             </ul>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <MapPin className="w-4 h-4 text-primary" />
+                <span>Luanda, Angola</span>
+                <img src="/angola-flag.png" alt="AO" className="w-4 h-4 object-contain rounded-full" />
+              </div>
+              <a href="mailto:suporte@makemoney.ao" className="flex items-center gap-3 text-sm text-muted-foreground hover:text-primary transition-colors">
+                <Mail className="w-4 h-4 text-primary" />
+                <span>suporte@makemoney.ao</span>
+              </a>
+            </div>
           </div>
         </div>
 
-        <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Make Money With Lima. Todos os direitos reservados.
+        {/* Bottom Bar */}
+        <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+          <p className="text-xs text-muted-foreground uppercase tracking-[0.2em] font-bold">
+            © {new Date().getFullYear()} Make Money With Lima. A revolução digital angolana.
           </p>
-          <div className="flex items-center gap-4">
-            <Link to="/termos" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-              Termos de Uso
-            </Link>
-            <Link to="/privacidade" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-              Privacidade
-            </Link>
+          <div className="flex flex-col md:flex-row items-center gap-4">
+            <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 rounded-full border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
+              <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">+18 ANOS</span>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/5">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Servidores Online</span>
+            </div>
           </div>
         </div>
       </div>
-    </footer>;
+    </footer>
+  );
 };
+
 export default Footer;

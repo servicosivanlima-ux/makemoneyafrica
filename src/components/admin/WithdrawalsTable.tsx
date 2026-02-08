@@ -24,6 +24,9 @@ interface Withdrawal {
     full_name: string;
     email: string;
     phone: string;
+    country: string | null;
+    user_type: string;
+    account_type: string | null;
   } | null;
 }
 
@@ -123,6 +126,14 @@ const WithdrawalsTable = ({ withdrawals, onRefresh }: WithdrawalsTableProps) => 
 
   const getMethodLabel = (method: string) => {
     return method === "iban" ? "IBAN Bancário" : "Multicaixa Express";
+  };
+
+  const getUserTypeLabel = (type: string | undefined) => {
+    return type === "client" ? "Cliente" : "Trabalhador";
+  };
+
+  const getAccountTypeLabel = (type: string | null | undefined) => {
+    return type === "company" ? "Empresarial" : "Pessoal";
   };
 
   if (withdrawals.length === 0) {
@@ -233,8 +244,24 @@ const WithdrawalsTable = ({ withdrawals, onRefresh }: WithdrawalsTableProps) => 
                   <p className="font-medium">{selectedWithdrawal.worker?.full_name}</p>
                 </div>
                 <div>
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="font-medium">{selectedWithdrawal.worker?.email}</p>
+                </div>
+                <div>
                   <p className="text-sm text-muted-foreground">Telefone</p>
                   <p className="font-medium">{selectedWithdrawal.worker?.phone}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Tipo</p>
+                  <p className="font-medium">{getUserTypeLabel(selectedWithdrawal.worker?.user_type)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Tipo de Conta</p>
+                  <p className="font-medium">{getAccountTypeLabel(selectedWithdrawal.worker?.account_type)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">País</p>
+                  <p className="font-medium">{selectedWithdrawal.worker?.country || "Não informado"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Valor</p>
@@ -274,8 +301,8 @@ const WithdrawalsTable = ({ withdrawals, onRefresh }: WithdrawalsTableProps) => 
               <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
                 Cancelar
               </Button>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={handleReject}
                 disabled={processing !== null}
               >

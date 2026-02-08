@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User as UserIcon, Building2, Phone, Mail, Save, Loader2 } from "lucide-react";
+import { User as UserIcon, Building2, Phone, Mail, Save, Loader2, Lock, Eye, EyeOff } from "lucide-react";
 
 interface ClientSettingsProps {
   user: User;
@@ -28,9 +28,13 @@ const ClientSettings = ({ user }: ClientSettingsProps) => {
     full_name: "",
     email: "",
     phone: "",
-    account_type: "pessoal",
+    account_type: "personal",
     company_name: null,
   });
+
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -51,56 +55,43 @@ const ClientSettings = ({ user }: ClientSettingsProps) => {
           full_name: data.full_name || "",
           email: data.email || "",
           phone: data.phone || "",
-          account_type: data.account_type || "pessoal",
+          account_type: data.account_type || "personal",
           company_name: data.company_name || null,
         });
       }
-    } catch (error) {
-      console.error("Error loading profile:", error);
-      toast.error("Erro ao carregar perfil");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSave = async () => {
-    if (!profile.full_name.trim()) {
-      toast.error("Nome completo é obrigatório");
+  const handleUpdatePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast.error("Preencha ambos os campos de senha");
       return;
     }
-
-    if (!profile.phone.trim()) {
-      toast.error("Telefone é obrigatório");
+    if (newPassword !== confirmPassword) {
+      toast.error("As senhas não coincidem");
       return;
     }
-
-    if (profile.account_type === "empresa" && !profile.company_name?.trim()) {
-      toast.error("Nome da empresa é obrigatório para contas empresariais");
+    if (newPassword.length < 6) {
+      toast.error("A senha deve ter pelo menos 6 caracteres");
       return;
     }
 
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          full_name: profile.full_name.trim(),
-          phone: profile.phone.trim(),
-          account_type: profile.account_type,
-          company_name: profile.account_type === "empresa" ? profile.company_name?.trim() : null,
-        })
-        .eq("user_id", user.id);
-
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
-
-      toast.success("Perfil atualizado com sucesso!");
-    } catch (error) {
-      console.error("Error saving profile:", error);
-      toast.error("Erro ao salvar perfil");
+      toast.success("Senha atualizada com sucesso!");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao atualizar senha");
     } finally {
       setSaving(false);
     }
   };
+
 
   if (loading) {
     return (
@@ -119,19 +110,17 @@ const ClientSettings = ({ user }: ClientSettingsProps) => {
             <UserIcon className="w-5 h-5 text-primary" />
             Informações Pessoais
           </CardTitle>
-          <CardDescription>
-            Atualize seus dados pessoais e de contato
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="full_name">Nome Completo</Label>
+              <Label htmlFor="full_name">Primeiro e último nome</Label>
               <Input
                 id="full_name"
                 value={profile.full_name}
-                onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                placeholder="Seu nome completo"
+                disabled
+                className="bg-muted"
+                placeholder="Primeiro e último nome"
               />
             </div>
             <div className="space-y-2">
@@ -155,73 +144,113 @@ const ClientSettings = ({ user }: ClientSettingsProps) => {
               <Input
                 id="phone"
                 value={profile.phone}
-                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                disabled
+                className="pl-10 bg-muted"
                 placeholder="+244 9XX XXX XXX"
-                className="pl-10"
               />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Account Type */}
-      <Card className="bg-card border-border">
+      {/* Security Section */}
+      <Card className="bg-card border-border border-primary/20 shadow-neon">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-primary" />
-            Tipo de Conta
+            <Lock className="w-5 h-5 text-primary" />
+            Segurança & Senha
           </CardTitle>
           <CardDescription>
-            Defina se é uma conta pessoal ou empresarial
+            Defina uma nova senha forte para proteger sua conta.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="account_type">Tipo de Conta</Label>
-            <Select
-              value={profile.account_type || "pessoal"}
-              onValueChange={(value) => setProfile({ ...profile, account_type: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o tipo de conta" />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-border">
-                <SelectItem value="pessoal">Conta Pessoal</SelectItem>
-                <SelectItem value="empresa">Conta Empresarial</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {profile.account_type === "empresa" && (
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="company_name">Nome da Empresa</Label>
-              <Input
-                id="company_name"
-                value={profile.company_name || ""}
-                onChange={(e) => setProfile({ ...profile, company_name: e.target.value })}
-                placeholder="Nome da sua empresa"
-              />
+              <Label htmlFor="new_password">Nova Senha</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="new_password"
+                  type={showPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="pl-10 focus-visible:ring-primary"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 transition-opacity"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
-          )}
+            <div className="space-y-2">
+              <Label htmlFor="confirm_password">Confirmar Nova Senha</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="confirm_password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="pl-10 focus-visible:ring-primary"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+          </div>
+          <Button
+            onClick={handleUpdatePassword}
+            disabled={saving}
+            className="w-full sm:w-auto font-black uppercase tracking-widest text-xs h-12"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Atualizando...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Atualizar Senha
+              </>
+            )}
+          </Button>
         </CardContent>
       </Card>
 
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving} className="bg-gradient-lime text-primary-foreground">
-          {saving ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Salvando...
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4 mr-2" />
-              Salvar Alterações
-            </>
-          )}
-        </Button>
-      </div>
+      {/* Support Section */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Phone className="w-5 h-5 text-primary" />
+            Suporte & Ajuda
+          </CardTitle>
+          <CardDescription>
+            Precisa de ajuda ou deseja alterar dados sensíveis?
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+            <p className="text-sm text-muted-foreground mb-4">
+              Para qualquer anomalia, alteração de dados, solicitações especiais ou dúvidas, contacte exclusivamente o nosso suporte oficial:
+            </p>
+            <a
+              href="https://wa.me/244923066682"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-lg font-bold text-primary hover:underline"
+            >
+              <Phone className="w-5 h-5" />
+              +244 923 066 682
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+
     </div>
   );
 };

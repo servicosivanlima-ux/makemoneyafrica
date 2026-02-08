@@ -1,123 +1,184 @@
-import { Briefcase, CheckCircle, CreditCard, FileText, Target, Upload, Users, Wallet } from "lucide-react";
+import { Briefcase, CheckCircle, CreditCard, FileText, Target, Upload, Users, Wallet, Zap } from "lucide-react";
+import { motion } from "framer-motion";
 
 const HowItWorks = () => {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: { duration: 0.5 }
+    }
+  };
+
   const clientSteps = [
     {
       icon: FileText,
       title: "1. Escolha o Plano",
-      description: "Selecione entre 'Tá no Limão' (seguidores) ou 'Kwanza' (engajamento completo)",
+      description: "Selecione entre pacotes de seguidores ou engajamento completo em AOA.",
     },
     {
       icon: Target,
       title: "2. Configure a Campanha",
-      description: "Escolha a plataforma e insira os links do perfil ou conteúdo a promover",
+      description: "Insira os links e defina seu público-alvo em poucos cliques.",
     },
     {
       icon: CreditCard,
       title: "3. Confirme o Pagamento",
-      description: "Envie o comprovativo via WhatsApp e aguarde a aprovação",
+      description: "Processo manual e seguro via transferência ou Multicaixa Express.",
     },
     {
       icon: CheckCircle,
-      title: "4. Acompanhe o Progresso",
-      description: "Visualize em tempo real o crescimento da sua campanha",
+      title: "4. Resultado Garantido",
+      description: "Acompanhe o crescimento real e orgânico das suas redes.",
     },
   ];
 
   const workerSteps = [
     {
       icon: Users,
-      title: "1. Cadastre-se",
-      description: "Preencha seus dados e links das suas redes sociais válidas",
+      title: "1. Criar Perfil",
+      description: "Cadastre suas redes sociais e seja verificado por nossa equipe.",
     },
     {
-      icon: Target,
-      title: "2. Veja as Tarefas",
-      description: "Acesse tarefas disponíveis das plataformas que você cadastrou",
+      icon: Zap,
+      title: "2. Executar Tarefas",
+      description: "Curta, siga ou comente em perfis reais de clientes.",
     },
     {
       icon: Upload,
-      title: "3. Complete e Comprove",
-      description: "Execute a tarefa e faça upload dos prints como prova",
+      title: "3. Enviar Provas",
+      description: "Faça upload dos prints e receba aprovação rápida.",
     },
     {
       icon: Wallet,
-      title: "4. Receba seu Dinheiro",
-      description: "Após aprovação, solicite saque para IBAN ou Multicaixa Express",
+      title: "4. Sacar Ganhos",
+      description: "Retire seu dinheiro acumulado direto para sua conta bancária.",
     },
   ];
 
   return (
-    <section className="section-padding bg-background relative">
-      <div className="container-app">
+    <section className="section-container relative overflow-hidden">
+      <div className="absolute top-1/2 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
+
+      <div className="relative z-10">
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-            Como Funciona
-          </span>
-          <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-            Simples, Rápido e <span className="text-gradient-lime">Seguro</span>
-          </h2>
-          <p className="text-muted-foreground text-lg">
-            Seja você um cliente ou trabalhador, o processo é transparente e fácil de seguir.
-          </p>
+        <div className="text-center max-w-3xl mx-auto mb-20">
+          <motion.span
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="inline-block px-4 py-1 rounded-full bg-white/5 border border-white/10 text-primary text-xs font-black uppercase tracking-widest mb-4"
+          >
+            Fluxo de Trabalho
+          </motion.span>
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="text-4xl sm:text-5xl font-black text-foreground mb-6"
+          >
+            Simples, Rápido e <span className="text-gradient-neon">Transparente</span>
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="text-muted-foreground text-lg sm:text-xl"
+          >
+            Construímos a ponte entre quem precisa de impacto digital e quem quer monetizar a sua influência.
+          </motion.p>
         </div>
 
         {/* Two columns */}
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+        <div className="grid lg:grid-cols-2 gap-10">
           {/* For Clients */}
-          <div className="card-elevated p-8">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-12 h-12 rounded-xl bg-gradient-lime flex items-center justify-center">
-                <Briefcase className="w-6 h-6 text-primary-foreground" />
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="card-premium-glow p-8 lg:p-12"
+          >
+            <div className="flex items-center gap-4 mb-10">
+              <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-neon">
+                <Briefcase className="w-7 h-7 text-primary-foreground" />
               </div>
               <div>
-                <h3 className="font-display text-xl font-bold text-foreground">Para Clientes</h3>
-                <p className="text-sm text-muted-foreground">Cresça suas redes sociais</p>
+                <h3 className="text-2xl font-bold text-foreground">Para Clientes</h3>
+                <p className="text-sm text-primary font-medium tracking-wide uppercase">Crescimento Acelerado</p>
               </div>
             </div>
 
-            <div className="space-y-6">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="space-y-8"
+            >
               {clientSteps.map((step, i) => (
-                <div key={i} className="flex gap-4 group">
-                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 group-hover:bg-primary/10 transition-colors">
-                    <step.icon className="w-5 h-5 text-primary" />
+                <motion.div key={i} variants={itemVariants} className="flex gap-5 group">
+                  <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-primary/10 group-hover:border-primary/30 transition-all duration-300">
+                    <step.icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-foreground mb-1">{step.title}</h4>
-                    <p className="text-sm text-muted-foreground">{step.description}</p>
+                  <div className="pt-1">
+                    <h4 className="text-lg font-bold text-foreground mb-1 group-hover:text-primary transition-colors">{step.title}</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
           {/* For Workers */}
-          <div className="card-elevated p-8">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-12 h-12 rounded-xl bg-gradient-gold flex items-center justify-center">
-                <Wallet className="w-6 h-6 text-gold-foreground" />
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="card-premium-glow p-8 lg:p-12"
+          >
+            <div className="flex items-center gap-4 mb-10">
+              <div className="w-14 h-14 rounded-2xl bg-yellow-500 flex items-center justify-center shadow-gold-premium">
+                <Wallet className="w-7 h-7 text-yellow-950" />
               </div>
               <div>
-                <h3 className="font-display text-xl font-bold text-foreground">Para Trabalhadores</h3>
-                <p className="text-sm text-muted-foreground">Ganhe dinheiro com tarefas</p>
+                <h3 className="text-2xl font-bold text-foreground">Para Trabalhadores</h3>
+                <p className="text-sm text-yellow-500 font-medium tracking-wide uppercase">Monetize seu Tempo</p>
               </div>
             </div>
 
-            <div className="space-y-6">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="space-y-8"
+            >
               {workerSteps.map((step, i) => (
-                <div key={i} className="flex gap-4 group">
-                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 group-hover:bg-gold/10 transition-colors">
-                    <step.icon className="w-5 h-5 text-gold" />
+                <motion.div key={i} variants={itemVariants} className="flex gap-5 group">
+                  <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-yellow-500/10 group-hover:border-yellow-500/30 transition-all duration-300">
+                    <step.icon className="w-5 h-5 text-muted-foreground group-hover:text-yellow-500 transition-colors" />
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-foreground mb-1">{step.title}</h4>
-                    <p className="text-sm text-muted-foreground">{step.description}</p>
+                  <div className="pt-1">
+                    <h4 className="text-lg font-bold text-foreground mb-1 group-hover:text-yellow-500 transition-colors">{step.title}</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
       </div>
     </section>

@@ -6,18 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  User as UserIcon, 
-  Phone, 
-  Mail, 
-  Save, 
-  Loader2, 
+import {
+  User as UserIcon,
+  Phone,
+  Mail,
+  Save,
+  Loader2,
   Wallet,
   Facebook,
   Instagram,
   Youtube,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Shield,
+  Lock,
+  Eye,
+  EyeOff
 } from "lucide-react";
 
 interface WorkerSettingsProps {
@@ -28,12 +31,27 @@ interface ProfileData {
   full_name: string;
   email: string;
   phone: string;
-  withdrawal_method: string | null;
-  withdrawal_details: string | null;
-  facebook_link: string | null;
-  instagram_link: string | null;
-  tiktok_link: string | null;
-  youtube_link: string | null;
+  worker_status: string;
+  facebook_link?: string | null;
+  instagram_link?: string | null;
+  tiktok_link?: string | null;
+  youtube_link?: string | null;
+  personal_info_editable?: boolean;
+}
+
+interface KycData {
+  doc_type: string;
+  doc_number: string;
+  doc_name: string;
+  verified: boolean;
+}
+
+interface WithdrawData {
+  type: string;
+  identifier: string;
+  holder_name: string;
+  bank_name: string | null;
+  verified: boolean;
 }
 
 const WorkerSettings = ({ user }: WorkerSettingsProps) => {
@@ -43,18 +61,20 @@ const WorkerSettings = ({ user }: WorkerSettingsProps) => {
     full_name: "",
     email: "",
     phone: "",
-    withdrawal_method: null,
-    withdrawal_details: null,
-    facebook_link: null,
-    instagram_link: null,
-    tiktok_link: null,
-    youtube_link: null,
+    worker_status: "pending",
   });
+  const [kyc, setKyc] = useState<KycData | null>(null);
+  const [withdraw, setWithdraw] = useState<WithdrawData | null>(null);
 
-  // Separate state for withdrawal details
-  const [ibanBank, setIbanBank] = useState("");
-  const [ibanNumber, setIbanNumber] = useState("");
-  const [multicaixaNumber, setMulticaixaNumber] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [socials, setSocials] = useState({
+    facebook_link: "",
+    instagram_link: "",
+    tiktok_link: "",
+    youtube_link: "",
+  });
 
   useEffect(() => {
     loadProfile();
@@ -62,85 +82,124 @@ const WorkerSettings = ({ user }: WorkerSettingsProps) => {
 
   const loadProfile = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("full_name, email, phone, withdrawal_method, withdrawal_details, facebook_link, instagram_link, tiktok_link, youtube_link")
+        .select("full_name, email, phone, worker_status, personal_info_editable")
         .eq("user_id", user.id)
         .single();
 
-      if (error) throw error;
+      if (profileError) throw profileError;
 
-      if (data) {
+      if (profileData) {
+        const pd = profileData as any;
         setProfile({
-          full_name: data.full_name || "",
-          email: data.email || "",
-          phone: data.phone || "",
-          withdrawal_method: data.withdrawal_method || null,
-          withdrawal_details: data.withdrawal_details || null,
-          facebook_link: data.facebook_link || null,
-          instagram_link: data.instagram_link || null,
-          tiktok_link: data.tiktok_link || null,
-          youtube_link: data.youtube_link || null,
+          full_name: pd.full_name || "",
+          email: pd.email || "",
+          phone: pd.phone || "",
+          worker_status: pd.worker_status || "pending",
+          facebook_link: pd.facebook_link,
+          instagram_link: pd.instagram_link,
+          tiktok_link: pd.tiktok_link,
+          youtube_link: pd.youtube_link,
+          personal_info_editable: pd.personal_info_editable ?? true,
         });
 
-        // Parse withdrawal details
-        if (data.withdrawal_method === "iban" && data.withdrawal_details) {
-          const parts = data.withdrawal_details.split(" - ");
-          if (parts.length === 2) {
-            setIbanBank(parts[0]);
-            setIbanNumber(parts[1]);
-          }
-        } else if (data.withdrawal_method === "multicaixa" && data.withdrawal_details) {
-          setMulticaixaNumber(data.withdrawal_details);
-        }
+        setSocials({
+          facebook_link: pd.facebook_link || "",
+          instagram_link: pd.instagram_link || "",
+          tiktok_link: pd.tiktok_link || "",
+          youtube_link: pd.youtube_link || "",
+        });
       }
-    } catch (error) {
-      console.error("Error loading profile:", error);
-      toast.error("Erro ao carregar perfil");
+
+      // Load KYC
+      const { data: kycData } = await (supabase as any)
+        .from("kyc_documents")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (kycData) {
+        setKyc(kycData);
+      }
+
+      // Load Withdrawal
+      const { data: withdrawData } = await (supabase as any)
+        .from("withdraw_methods")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (withdrawData) {
+        setWithdraw(withdrawData);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const hasAtLeastOneSocialLink = () => {
-    return !!(profile.facebook_link || profile.instagram_link || profile.tiktok_link || profile.youtube_link);
+  const handleUpdatePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast.error("Preencha ambos os campos de senha");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("A senha deve ter pelo menos 6 caracteres");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      toast.success("Senha atualizada com sucesso!");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao atualizar senha");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSave = async () => {
-    if (!profile.full_name.trim()) {
-      toast.error("Nome completo é obrigatório");
+  const handleSaveSocials = async () => {
+    if (!socials.facebook_link || !socials.youtube_link) {
+      toast.error("Facebook e YouTube são obrigatórios para trabalhadores!");
+      setSaving(false);
       return;
     }
 
-    if (!profile.phone.trim()) {
-      toast.error("Telefone é obrigatório");
-      return;
-    }
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          facebook_link: socials.facebook_link,
+          instagram_link: socials.instagram_link,
+          tiktok_link: socials.tiktok_link,
+          youtube_link: socials.youtube_link,
+        })
+        .eq("user_id", user.id);
 
-    if (!hasAtLeastOneSocialLink()) {
-      toast.error("Pelo menos uma rede social é obrigatória");
-      return;
+      if (error) throw error;
+      toast.success("Redes sociais atualizadas!");
+      loadProfile();
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao salvar redes sociais");
+    } finally {
+      setSaving(false);
     }
+  };
 
-    if (!profile.withdrawal_method) {
-      toast.error("Selecione um método de saque");
+  const handleSavePersonalInfo = async () => {
+    if (!profile.full_name || !profile.phone) {
+      toast.error("Nome e Telefone são obrigatórios!");
       return;
-    }
-
-    // Validate withdrawal details
-    let withdrawalDetails = "";
-    if (profile.withdrawal_method === "iban") {
-      if (!ibanBank.trim() || !ibanNumber.trim()) {
-        toast.error("Preencha o banco e o número IBAN");
-        return;
-      }
-      withdrawalDetails = `${ibanBank.trim()} - ${ibanNumber.trim()}`;
-    } else if (profile.withdrawal_method === "multicaixa") {
-      if (!multicaixaNumber.trim()) {
-        toast.error("Preencha o número Multicaixa Express");
-        return;
-      }
-      withdrawalDetails = multicaixaNumber.trim();
     }
 
     setSaving(true);
@@ -148,23 +207,17 @@ const WorkerSettings = ({ user }: WorkerSettingsProps) => {
       const { error } = await supabase
         .from("profiles")
         .update({
-          full_name: profile.full_name.trim(),
-          phone: profile.phone.trim(),
-          withdrawal_method: profile.withdrawal_method,
-          withdrawal_details: withdrawalDetails,
-          facebook_link: profile.facebook_link?.trim() || null,
-          instagram_link: profile.instagram_link?.trim() || null,
-          tiktok_link: profile.tiktok_link?.trim() || null,
-          youtube_link: profile.youtube_link?.trim() || null,
+          full_name: profile.full_name,
+          phone: profile.phone,
+          personal_info_editable: false // LOCK after save
         })
         .eq("user_id", user.id);
 
       if (error) throw error;
-
-      toast.success("Perfil atualizado com sucesso!");
-    } catch (error) {
-      console.error("Error saving profile:", error);
-      toast.error("Erro ao salvar perfil");
+      toast.success("Informações pessoais atualizadas!");
+      loadProfile();
+    } catch (error: any) {
+      toast.error("Erro ao atualizar informações");
     } finally {
       setSaving(false);
     }
@@ -187,20 +240,22 @@ const WorkerSettings = ({ user }: WorkerSettingsProps) => {
             <UserIcon className="w-5 h-5 text-primary" />
             Informações Pessoais
           </CardTitle>
-          <CardDescription>
-            Atualize seus dados pessoais e de contato
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="full_name">Nome Completo</Label>
+              <Label htmlFor="full_name">Primeiro e último nome</Label>
               <Input
                 id="full_name"
                 value={profile.full_name}
                 onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                placeholder="Seu nome completo"
+                className="bg-background"
+                placeholder="Primeiro e último nome"
+                disabled={!profile.personal_info_editable}
               />
+              {!profile.personal_info_editable && (
+                <p className="text-[10px] text-yellow-500 font-bold uppercase tracking-tight">Edição bloqueada pelo sistema</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -224,82 +279,173 @@ const WorkerSettings = ({ user }: WorkerSettingsProps) => {
                 id="phone"
                 value={profile.phone}
                 onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                className="pl-10 bg-background"
                 placeholder="+244 9XX XXX XXX"
-                className="pl-10"
+                disabled={!profile.personal_info_editable}
               />
             </div>
+            {!profile.personal_info_editable && (
+              <p className="text-[10px] text-yellow-500 font-bold uppercase tracking-tight">Edição bloqueada pelo sistema</p>
+            )}
           </div>
+          {profile.personal_info_editable && (
+            <Button
+              onClick={handleSavePersonalInfo}
+              disabled={saving}
+              className="w-full sm:w-auto font-black uppercase tracking-widest text-xs h-12"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Salvar Informações
+                </>
+              )}
+            </Button>
+          )}
         </CardContent>
       </Card>
 
-      {/* Social Media Links */}
-      <Card className="bg-card border-border">
+      {/* Social Networks Section */}
+      <Card className="bg-card border-border border-primary/20">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <LinkIcon className="w-5 h-5 text-primary" />
+          <CardTitle className="flex items-center gap-2 text-primary">
+            <LinkIcon className="w-5 h-5" />
             Redes Sociais
           </CardTitle>
           <CardDescription>
-            Vincule suas redes sociais para receber tarefas. Pelo menos uma é obrigatória.
+            Vincule suas redes sociais para poder realizar tarefas nestas plataformas.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="facebook_link" className="flex items-center gap-2">
-                <Facebook className="w-4 h-4 text-blue-600" />
-                Facebook
+                <Facebook className="w-4 h-4 text-blue-500" />
+                Perfil do Facebook
               </Label>
               <Input
                 id="facebook_link"
-                value={profile.facebook_link || ""}
-                onChange={(e) => setProfile({ ...profile, facebook_link: e.target.value })}
                 placeholder="https://facebook.com/seu.perfil"
+                value={socials.facebook_link}
+                onChange={(e) => setSocials({ ...socials, facebook_link: e.target.value })}
+                className="bg-background focus-visible:ring-primary"
+                autoComplete="off"
+                spellCheck={false}
               />
+              <p className="text-[9px] text-red-500 font-bold uppercase tracking-tight">* Obrigatório</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="instagram_link" className="flex items-center gap-2">
-                <Instagram className="w-4 h-4 text-pink-600" />
-                Instagram
+                <Instagram className="w-4 h-4 text-pink-500" />
+                Perfil do Instagram
               </Label>
               <Input
                 id="instagram_link"
-                value={profile.instagram_link || ""}
-                onChange={(e) => setProfile({ ...profile, instagram_link: e.target.value })}
-                placeholder="https://instagram.com/seu.perfil"
+                placeholder="https://instagram.com/seu.user"
+                value={socials.instagram_link}
+                onChange={(e) => setSocials({ ...socials, instagram_link: e.target.value })}
+                className="bg-background focus-visible:ring-primary"
+                autoComplete="off"
+                spellCheck={false}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="tiktok_link" className="flex items-center gap-2">
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-                </svg>
-                TikTok
+                <span className="text-sm">🎵</span>
+                Perfil do TikTok
               </Label>
               <Input
                 id="tiktok_link"
-                value={profile.tiktok_link || ""}
-                onChange={(e) => setProfile({ ...profile, tiktok_link: e.target.value })}
-                placeholder="https://tiktok.com/@seu.perfil"
+                placeholder="https://tiktok.com/@seu.user"
+                value={socials.tiktok_link}
+                onChange={(e) => setSocials({ ...socials, tiktok_link: e.target.value })}
+                className="bg-background focus-visible:ring-primary"
+                autoComplete="off"
+                spellCheck={false}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="youtube_link" className="flex items-center gap-2">
-                <Youtube className="w-4 h-4 text-red-600" />
-                YouTube
+                <Youtube className="w-4 h-4 text-red-500" />
+                Canal do YouTube
               </Label>
               <Input
                 id="youtube_link"
-                value={profile.youtube_link || ""}
-                onChange={(e) => setProfile({ ...profile, youtube_link: e.target.value })}
                 placeholder="https://youtube.com/@seu.canal"
+                value={socials.youtube_link}
+                onChange={(e) => setSocials({ ...socials, youtube_link: e.target.value })}
+                className="bg-background focus-visible:ring-primary"
+                autoComplete="off"
+                spellCheck={false}
               />
+              <p className="text-[9px] text-red-500 font-bold uppercase tracking-tight">* Obrigatório</p>
             </div>
           </div>
-          {!hasAtLeastOneSocialLink() && (
-            <p className="text-sm text-destructive">
-              ⚠️ Você precisa vincular pelo menos uma rede social para receber tarefas
-            </p>
+          <Button
+            onClick={handleSaveSocials}
+            disabled={saving}
+            className="w-full sm:w-auto font-black uppercase tracking-widest text-xs h-12"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Salvar Redes Sociais
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Identity Verification Status */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-primary" />
+              Verificação de Identidade
+            </div>
+            {kyc?.verified ? (
+              <span className="text-[10px] font-black uppercase tracking-widest bg-green-500/10 text-green-500 px-3 py-1 rounded-full border border-green-500/20">
+                Verificado
+              </span>
+            ) : (
+              <span className="text-[10px] font-black uppercase tracking-widest bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full border border-yellow-500/20">
+                Pendente
+              </span>
+            )}
+          </CardTitle>
+          <CardDescription>
+            Documento de identidade vinculado à sua conta real.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {kyc ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Tipo</p>
+                <p className="text-sm font-medium">{kyc.doc_type}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Número (Mascarado)</p>
+                <p className="text-sm font-medium">****{kyc.doc_number.slice(-4)}</p>
+              </div>
+              <div className="space-y-1 col-span-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Nome no Documento</p>
+                <p className="text-sm font-medium">{kyc.doc_name}</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">Nenhuma identificação submetida.</p>
           )}
         </CardContent>
       </Card>
@@ -307,96 +453,151 @@ const WorkerSettings = ({ user }: WorkerSettingsProps) => {
       {/* Withdrawal Method */}
       <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Wallet className="w-5 h-5 text-primary" />
-            Método de Saque
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-primary" />
+              Método de Saque
+            </div>
+            {withdraw?.verified ? (
+              <span className="text-[10px] font-black uppercase tracking-widest bg-green-500/10 text-green-500 px-3 py-1 rounded-full border border-green-500/20">
+                Verificado
+              </span>
+            ) : (
+              <span className="text-[10px] font-black uppercase tracking-widest bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full border border-yellow-500/20">
+                Pendente
+              </span>
+            )}
           </CardTitle>
           <CardDescription>
-            Configure como deseja receber seus pagamentos
+            Destino configurado para seus ganhos.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="withdrawal_method">Método de Pagamento</Label>
-            <Select
-              value={profile.withdrawal_method || ""}
-              onValueChange={(value) => setProfile({ ...profile, withdrawal_method: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o método de saque" />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-border">
-                <SelectItem value="iban">Transferência Bancária (IBAN)</SelectItem>
-                <SelectItem value="multicaixa">Multicaixa Express</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {profile.withdrawal_method === "iban" && (
-            <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
-              <div className="space-y-2">
-                <Label htmlFor="iban_bank">Banco</Label>
-                <Select value={ibanBank} onValueChange={setIbanBank}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o banco" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border">
-                    <SelectItem value="BAI">BAI - Banco Angolano de Investimentos</SelectItem>
-                    <SelectItem value="BFA">BFA - Banco de Fomento Angola</SelectItem>
-                    <SelectItem value="BIC">BIC - Banco Internacional de Crédito</SelectItem>
-                    <SelectItem value="BPC">BPC - Banco de Poupança e Crédito</SelectItem>
-                    <SelectItem value="BMA">BMA - Banco Millennium Atlântico</SelectItem>
-                    <SelectItem value="SOL">Banco SOL</SelectItem>
-                    <SelectItem value="Keve">Banco Keve</SelectItem>
-                    <SelectItem value="Standard">Standard Bank</SelectItem>
-                    <SelectItem value="Outro">Outro</SelectItem>
-                  </SelectContent>
-                </Select>
+          {withdraw ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Tipo</p>
+                <p className="text-sm font-medium uppercase">{withdraw.type}</p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="iban_number">Número IBAN</Label>
-                <Input
-                  id="iban_number"
-                  value={ibanNumber}
-                  onChange={(e) => setIbanNumber(e.target.value)}
-                  placeholder="AO06 0000 0000 0000 0000 0000 0"
-                />
+              <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{withdraw.type === 'iban' ? 'IBAN' : 'Número Express'}</p>
+                <p className="text-sm font-medium">{withdraw.identifier}</p>
+              </div>
+              {withdraw.bank_name && (
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Banco</p>
+                  <p className="text-sm font-medium">{withdraw.bank_name}</p>
+                </div>
+              )}
+              <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Titular</p>
+                <p className="text-sm font-medium">{withdraw.holder_name}</p>
               </div>
             </div>
-          )}
-
-          {profile.withdrawal_method === "multicaixa" && (
-            <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
-              <div className="space-y-2">
-                <Label htmlFor="multicaixa_number">Número Multicaixa Express</Label>
-                <Input
-                  id="multicaixa_number"
-                  value={multicaixaNumber}
-                  onChange={(e) => setMulticaixaNumber(e.target.value)}
-                  placeholder="9XX XXX XXX"
-                />
-              </div>
-            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">Nenhum método de saque configurado.</p>
           )}
         </CardContent>
       </Card>
 
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving} className="bg-gradient-lime text-primary-foreground">
-          {saving ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Salvando...
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4 mr-2" />
-              Salvar Alterações
-            </>
-          )}
-        </Button>
-      </div>
+      {/* Security Section */}
+      <Card className="bg-card border-border border-primary/20 shadow-neon">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="w-5 h-5 text-primary" />
+            Segurança & Senha
+          </CardTitle>
+          <CardDescription>
+            Defina uma nova senha forte para proteger sua conta.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="new_password_worker">Nova Senha</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="new_password_worker"
+                  type={showPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="pl-10 focus-visible:ring-primary"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 transition-opacity"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm_password_worker">Confirmar Nova Senha</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="confirm_password_worker"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="pl-10 focus-visible:ring-primary"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+          </div>
+          <Button
+            onClick={handleUpdatePassword}
+            disabled={saving}
+            className="w-full sm:w-auto font-black uppercase tracking-widest text-xs h-12"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Atualizando...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Atualizar Senha
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Support Section */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Phone className="w-5 h-5 text-primary" />
+            Suporte & Ajuda
+          </CardTitle>
+          <CardDescription>
+            Precisa de ajuda ou deseja alterar dados sensíveis?
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+            <p className="text-sm text-muted-foreground mb-4">
+              Para qualquer anomalia, alteração de dados, solicitações especiais ou dúvidas, contacte exclusivamente o nosso suporte oficial:
+            </p>
+            <a
+              href="https://wa.me/244923066682"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-lg font-bold text-primary hover:underline"
+            >
+              <Phone className="w-5 h-5" />
+              +244 923 066 682
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+
     </div>
   );
 };
