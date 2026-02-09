@@ -13,28 +13,48 @@ interface Message {
 const KNOWLEDGE_BASE = [
     {
         intent: "SAUDACAO",
-        keywords: ["olá", "bom dia", "boa tarde", "como está o dia", "tudo bem"],
-        response: "Olá 👋 Bem-vindo à Make Money With Lima.\nPosso ajudar como Cliente ou Trabalhador. Em que posso ajudar?"
+        keywords: ["olá", "bom dia", "boa tarde", "como está o dia", "tudo bem", "oi"],
+        response: "Olá 👋 Bem-vindo à Make Money With Lima (MMWL).\nA maior plataforma de marketing digital de Angola. Posso ajudar como Cliente (impulsionar redes) ou Trabalhador (ganhar dinheiro). Em que posso ser útil?"
+    },
+    {
+        intent: "DOMINIO",
+        keywords: ["site", "link", "domínio", "url", "portal", "onde acessa"],
+        response: "O nosso portal oficial é o https://makemoney.social.br. Certifique-se de que está no site correto para sua segurança."
     },
     {
         intent: "CREDIBILIDADE",
-        keywords: ["é confiável?", "isso é real?", "é golpe?", "posso confiar?"],
-        response: "A Make Money With Lima é uma plataforma 100% séria e credível, com trabalhadores verificados, pagamentos confirmados manualmente e suporte 24/7."
+        keywords: ["é confiável?", "isso é real?", "é golpe?", "posso confiar?", "seguro"],
+        response: "A Make Money With Lima é uma plataforma 100% segura e focada no mercado angolano. Temos sistemas antifraude, pagamentos verificados e suporte dedicado."
+    },
+    {
+        intent: "SAQUE_PAGAMENTO",
+        keywords: ["saque", "retirada", "receber", "pagamento", "levantar", "iban", "express"],
+        response: "Os pagamentos são feitos em Kwanza (AOA). Pode solicitar o seu saque via Número Express ou IBAN. O processamento leva de imediato até 24 horas úteis."
     },
     {
         intent: "CLIENTE_PLANOS",
-        keywords: ["planos", "preços", "quanto custa", "pacotes", "campanhas"],
-        response: "Trabalhamos com dois planos principais:\n🔹 **Tá no Limão** – seguidores reais (desde 6.000 Kz)\n🔸 **Kwanza** – engajamento completo (desde 30.000 Kz).\nMais detalhes na landing page."
+        keywords: ["planos", "preços", "quanto custa", "pacotes", "campanhas", "anunciar"],
+        response: "Para Clientes, temos os planos:\n🔹 **Tá no Limão** – Seguidores reais (desde 6.000 Kz)\n🔸 **Kwanza** – Engajamento premium (desde 30.000 Kz).\nCrie a sua campanha agora no portal!"
+    },
+    {
+        intent: "TRABALHADOR_GANHOS",
+        keywords: ["trabalhar", "ganhar dinheiro", "tarefas", "como ganhar", "vagas"],
+        response: "Como Trabalhador, você ganha dinheiro realizando tarefas simples como seguir ou curtir. Crie conta como Trabalhador e comece a faturar em Kwanza!"
     },
     {
         intent: "PAISES_SUPORTADOS",
         keywords: ["quais países", "funciona em portugal", "posso me cadastrar no brasil", "países", "onde funciona"],
-        response: "Estamos disponíveis em Angola 🇦🇴, Moçambique 🇲🇿, Brasil 🇧🇷 e Portugal 🇵🇹.\nPagamentos em Kwanza (AOA).\n🚀 Em breve, mais países."
+        response: "Atuamos em Angola 🇦🇴, Moçambique 🇲🇿, Brasil 🇧🇷 e Portugal 🇵🇹. A nossa moeda base para pagamentos é o Kwanza (AOA)."
+    },
+    {
+        intent: "SUPORTE",
+        keywords: ["suporte", "ajuda", "contato", "falar com alguém", "gerente", "email"],
+        response: "Pode contactar o nosso Gerente pelo WhatsApp +244 923 066 682 ou pelo e-mail suporte@makemoney.ao. Estamos aqui para ajudar!"
     },
     {
         intent: "CONFIDENCIAL",
-        keywords: ["sql", "credenciais", "adicionar admin", "como foi desenvolvido", "backend", "código"],
-        response: "Isso aí eu não sei ou é confidencial. Tente contactar o nosso Gerente pelo WhatsApp +244 923 066 682."
+        keywords: ["sql", "credenciais", "adicionar admin", "como foi desenvolvido", "backend", "código", "programador"],
+        response: "Informações técnicas ou sensíveis são confidenciais. Para parcerias ou dúvidas legítimas, use os nossos canais de suporte oficiais."
     }
 ];
 
@@ -44,7 +64,7 @@ const Chatbot = () => {
     const [messages, setMessages] = useState<Message[]>([
         {
             role: "bot",
-            content: "Olá 👋 Bem-vindo à Make Money With Lima.\nPosso ajudar como Cliente ou Trabalhador. Em que posso ajudar?"
+            content: "Olá 👋 Bem-vindo à Make Money With Lima!\nSou o assistente digital da maior plataforma de marketing de Angola. Posso ajudar com planos para clientes ou dúvidas de trabalhadores. O que deseja saber?"
         }
     ]);
     const [isTyping, setIsTyping] = useState(false);
