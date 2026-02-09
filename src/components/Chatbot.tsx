@@ -137,7 +137,7 @@ const Chatbot = () => {
                                         </div>
                                         <div className={`p-3 rounded-2xl text-sm whitespace-pre-wrap ${msg.role === "bot"
                                             ? "bg-muted/50 text-foreground rounded-tl-none border border-border"
-                                            : "bg-primary text-primary-foreground rounded-tr-none"
+                                            : "bg-primary text-zinc-950 font-medium rounded-tr-none"
                                             }`}>
                                             {msg.content}
                                         </div>
