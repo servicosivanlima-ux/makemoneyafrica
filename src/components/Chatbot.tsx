@@ -17,43 +17,57 @@ interface Message {
 const KNOWLEDGE_BASE = [
   {
     intent: "SAUDACAO",
-    keywords: ["ola", "oi", "bom dia", "boa tarde", "boa noite", "tudo bem"],
+    keywords: ["ola", "oi", "bom dia", "boa tarde", "boa noite"],
     response:
-      "Olá 👋 Seja bem-vindo à *Make Money With Lima (MMWL)*.\n\nSou o assistente oficial 🤖. Posso ajudar você como:\n\n✅ Cliente (divulgar redes e negócios)\n✅ Trabalhador (ganhar dinheiro online)\n\nO que deseja saber?"
+      "Olá 👋 Bem-vindo à *Make Money With Lima (MMWL)*.\n\nSou o assistente oficial 🤖.\n\nPosso ajudar você como:\n• Cliente (divulgação)\n• Trabalhador (ganhar dinheiro)\n\nO que deseja saber?"
+  },
+  {
+    intent: "SMALL_TALK",
+    keywords: [
+      "como vai",
+      "como estas",
+      "como está",
+      "tudo bem",
+      "estás bem",
+      "vai bem",
+      "como andas"
+    ],
+    response:
+      "😊 Estou ótimo, obrigado por perguntar!\n\nEstou aqui para ajudar você com tudo sobre a *Make Money With Lima*.\n\nQuer ganhar dinheiro ou divulgar um negócio?"
   },
   {
     intent: "DOMINIO",
     keywords: ["site", "link", "dominio", "url", "portal"],
     response:
-      "🔐 O site oficial da plataforma é:\n👉 https://makemoney.social.br\n\nEvite links falsos para sua segurança."
+      "🔐 O site oficial da plataforma é:\n👉 https://makemoney.social.br\n\nEvite links falsos."
   },
   {
     intent: "CREDIBILIDADE",
-    keywords: ["confiavel", "real", "golpe", "seguro", "verdade"],
+    keywords: ["confiavel", "real", "golpe", "seguro"],
     response:
-      "Sim ✅ A MMWL é uma plataforma real e segura.\n\n✔ Pagamentos verificados\n✔ Sistema antifraude\n✔ Suporte ativo\n✔ Focada no mercado angolano"
+      "✅ A MMWL é uma plataforma real e segura.\n\n✔ Pagamentos verificados\n✔ Sistema antifraude\n✔ Suporte ativo"
   },
   {
     intent: "SAQUE",
-    keywords: ["saque", "retirar", "pagamento", "receber", "iban", "express"],
+    keywords: ["saque", "retirar", "pagamento", "iban", "express"],
     response:
-      "💰 Os pagamentos são feitos em **Kwanza (AOA)**.\n\n📌 Métodos disponíveis:\n• Número Express\n• IBAN\n\n⏱ Processamento: imediato até 24h úteis."
+      "💰 Pagamentos em **Kwanza (AOA)**.\n\n📌 Métodos:\n• Express\n• IBAN\n\n⏱ Até 24h úteis."
   },
   {
     intent: "TRABALHADOR",
     keywords: ["trabalhar", "ganhar dinheiro", "tarefas", "worker"],
     response:
-      "👷 Como *Trabalhador*, você ganha dinheiro realizando tarefas simples como:\n\n✔ Curtir\n✔ Seguir\n✔ Visualizar conteúdos\n\nApós concluir, o saldo é creditado automaticamente."
+      "👷 Como *Trabalhador*, você ganha dinheiro realizando tarefas simples como curtir, seguir e visualizar conteúdos."
   },
   {
     intent: "CLIENTE",
-    keywords: ["anunciar", "divulgar", "impulsionar", "campanha", "planos"],
+    keywords: ["anunciar", "divulgar", "campanha", "impulsionar", "planos"],
     response:
-      "📢 Como *Cliente*, você pode:\n\n✔ Divulgar Instagram, TikTok, YouTube\n✔ Criar campanhas segmentadas\n✔ Alcançar trabalhadores reais\n\nDeseja conhecer os planos disponíveis?"
+      "📢 Como *Cliente*, você pode divulgar redes sociais e negócios com campanhas direcionadas."
   }
 ];
 
-/* ===================== UTILIDADES NLP ===================== */
+/* ===================== NLP ===================== */
 function normalize(text: string) {
   return text
     .toLowerCase()
@@ -62,11 +76,10 @@ function normalize(text: string) {
     .replace(/[^a-z0-9\s]/g, "");
 }
 
-function getBestResponse(message: string): string {
+function getBestResponse(message: string) {
   const text = normalize(message);
   let bestScore = 0;
-  let bestResponse =
-    "🤔 Não entendi totalmente, mas posso ajudar.\n\nTente perguntar sobre:\n• Pagamentos\n• Trabalhar\n• Anunciar\n• Segurança";
+  let bestResponse = "";
 
   for (const item of KNOWLEDGE_BASE) {
     let score = 0;
@@ -79,7 +92,7 @@ function getBestResponse(message: string): string {
     }
   }
 
-  return bestResponse;
+  return { response: bestResponse, confidence: bestScore };
 }
 
 /* ===================== COMPONENTE ===================== */
@@ -101,7 +114,7 @@ export default function ChatBot() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  function sendMessage() {
+  async function sendMessage() {
     if (!input.trim()) return;
 
     const userMessage: Message = { role: "user", content: input };
@@ -109,16 +122,45 @@ export default function ChatBot() {
     setInput("");
     setLoading(true);
 
-    setTimeout(() => {
-      const response = getBestResponse(userMessage.content);
-      setMessages((prev) => [...prev, { role: "bot", content: response }]);
-      setLoading(false);
-    }, 900);
+    const { response, confidence } = getBestResponse(userMessage.content);
+
+    // 🔥 FORA DO ESCOPO → CHATGPT
+    if (confidence < 1) {
+      try {
+        const res = await fetch("/api/ai-chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userMessage.content })
+        });
+
+        const data = await res.json();
+
+        setMessages((prev) => [
+          ...prev,
+          { role: "bot", content: data.reply }
+        ]);
+      } catch {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "bot",
+            content:
+              "⚠️ Estou com dificuldades técnicas agora. Tente novamente."
+          }
+        ]);
+      }
+    } else {
+      setMessages((prev) => [
+        ...prev,
+        { role: "bot", content: response }
+      ]);
+    }
+
+    setLoading(false);
   }
 
   return (
     <>
-      {/* BOTÃO FLUTUANTE */}
       <Button
         className="fixed bottom-5 right-5 rounded-full shadow-xl"
         onClick={() => setOpen(true)}
@@ -126,30 +168,23 @@ export default function ChatBot() {
         <MessageSquare />
       </Button>
 
-      {/* CHAT */}
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
+            exit={{ opacity: 0, y: 40 }}
             className="fixed bottom-20 right-5 w-96 max-w-[95%]"
           >
             <Card className="flex flex-col h-[520px] shadow-2xl">
-              {/* HEADER */}
-              <div className="flex items-center justify-between p-3 border-b">
-                <div className="flex items-center gap-2">
-                  <Bot className="text-primary" />
-                  <span className="font-semibold">MMWL Assistente</span>
+              <div className="flex justify-between p-3 border-b">
+                <div className="flex gap-2">
+                  <Bot /> MMWL Assistente
                 </div>
-                <X
-                  className="cursor-pointer"
-                  onClick={() => setOpen(false)}
-                />
+                <X onClick={() => setOpen(false)} className="cursor-pointer" />
               </div>
 
-              {/* MENSAGENS */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-3 text-sm">
+              <div className="flex-1 p-3 overflow-y-auto space-y-3 text-sm">
                 {messages.map((msg, i) => (
                   <div
                     key={i}
@@ -168,18 +203,15 @@ export default function ChatBot() {
                     </div>
                   </div>
                 ))}
-
                 {loading && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
+                  <div className="flex items-center gap-2">
                     <Loader2 className="animate-spin w-4 h-4" />
                     Digitando...
                   </div>
                 )}
-
                 <div ref={bottomRef} />
               </div>
 
-              {/* INPUT */}
               <div className="flex gap-2 p-3 border-t">
                 <Input
                   value={input}
