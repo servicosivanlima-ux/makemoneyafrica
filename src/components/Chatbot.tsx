@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Send, Bot, User, Loader2, X, MessageSquare } from "lucide-react";
+import { Send, Bot, Loader2, X, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -124,39 +124,19 @@ export default function ChatBot() {
 
     const { response, confidence } = getBestResponse(userMessage.content);
 
-    // 🔥 FORA DO ESCOPO → CHATGPT
-    if (confidence < 1) {
-      try {
-        const res = await fetch("/api/ai-chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: userMessage.content })
-        });
-
-        const data = await res.json();
-
-        setMessages((prev) => [
-          ...prev,
-          { role: "bot", content: data.reply }
-        ]);
-      } catch {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "bot",
-            content:
-              "⚠️ Estou com dificuldades técnicas agora. Tente novamente."
-          }
-        ]);
-      }
-    } else {
+    setTimeout(() => {
       setMessages((prev) => [
         ...prev,
-        { role: "bot", content: response }
+        {
+          role: "bot",
+          content:
+            confidence > 0
+              ? response
+              : "🤔 Não entendi muito bem, mas posso ajudar com:\n• Pagamentos\n• Trabalhar\n• Anunciar\n• Segurança"
+        }
       ]);
-    }
-
-    setLoading(false);
+      setLoading(false);
+    }, 700);
   }
 
   return (
