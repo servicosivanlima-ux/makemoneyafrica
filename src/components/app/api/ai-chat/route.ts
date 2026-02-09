@@ -9,16 +9,16 @@ export async function POST(req: Request) {
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: "gpt-3.5-turbo",
           messages: [
             {
               role: "system",
               content:
-                "Você é um assistente educado, humano e profissional da plataforma Make Money With Lima (MMWL). Responda de forma clara e amigável."
+                "Você é um assistente educado e profissional da plataforma Make Money With Lima."
             },
             { role: "user", content: message }
           ],
@@ -30,15 +30,22 @@ export async function POST(req: Request) {
 
     const data = await response.json();
 
+    // 🔍 LOG REAL DO ERRO (Vercel)
+    if (!response.ok) {
+      console.error("OPENAI ERROR:", data);
+      return NextResponse.json({
+        reply:
+          "⚠️ Erro ao comunicar com o serviço de IA. Verifique a chave e o modelo."
+      });
+    }
+
     return NextResponse.json({
-      reply:
-        data.choices?.[0]?.message?.content ??
-        "Não consegui responder agora."
+      reply: data.choices[0].message.content
     });
-  } catch {
+  } catch (error) {
+    console.error("API ERROR:", error);
     return NextResponse.json({
-      reply:
-        "⚠️ Serviço temporariamente indisponível. Tente novamente."
+      reply: "⚠️ Falha interna no servidor."
     });
   }
 }
