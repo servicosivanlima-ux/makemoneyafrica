@@ -156,6 +156,9 @@ const Admin = () => {
           client: clientProfiles?.find(p => p.user_id === campaign.client_id) || null
         }));
         setPendingCampaigns(campaignsWithClients);
+      } else if (campaignsError) {
+        console.error("Error loading campaigns:", campaignsError);
+        toast.error("Erro ao carregar campanhas: " + campaignsError.message);
       }
 
       // Load pending tasks
@@ -185,6 +188,9 @@ const Admin = () => {
           worker: workerProfiles?.find(p => p.user_id === task.worker_id) || null
         }));
         setPendingTasks(tasksWithRelations);
+      } else if (tasksError) {
+        console.error("Error loading tasks:", tasksError);
+        toast.error("Erro ao carregar tarefas: " + tasksError.message);
       }
 
       // Load all users (excluding admins from the general list)

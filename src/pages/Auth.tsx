@@ -9,7 +9,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 const emailSchema = z.string().email("Email inválido").max(255, "Email muito longo");
 const passwordSchema = z.string().min(6, "Mínimo 6 caracteres").max(72, "Senha muito longa");
-const phoneSchema = z.string().min(9, "Telefone inválido").max(15, "Telefone inválido");
+const phoneSchema = z.string().min(9, "Telefone inválido").max(20, "Telefone inválido");
 const nameSchema = z.string().min(2, "Nome muito curto").max(100, "Nome muito longo");
 
 const Auth = () => {
@@ -31,6 +31,7 @@ const Auth = () => {
 
   // Common fields
   const [email, setEmail] = useState("");
+  const [confirmEmail, setConfirmEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [country, setCountry] = useState("AO");
@@ -112,6 +113,10 @@ const Auth = () => {
     try {
       emailSchema.parse(email);
       if (isForgotPassword) return true;
+      if (isSignup && email !== confirmEmail) {
+        toast.error("Os e-mails inseridos não coincidem.");
+        return false;
+      }
       passwordSchema.parse(password);
       if (isSignup) {
         nameSchema.parse(pageName);
@@ -561,6 +566,16 @@ const Auth = () => {
                       <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-premium pl-11" placeholder="exemplo@email.com" required />
                     </div>
                   </div>
+
+                  {isSignup && !isForgotPassword && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Confirmar Email</label>
+                      <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <input type="email" value={confirmEmail} onChange={(e) => setConfirmEmail(e.target.value)} className="input-premium pl-11" placeholder="Confirme seu e-mail" required />
+                      </div>
+                    </div>
+                  )}
 
                   {isSignup && !isForgotPassword && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
