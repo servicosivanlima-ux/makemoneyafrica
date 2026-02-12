@@ -109,6 +109,12 @@ const Auth = () => {
     }
   }, [country, isSignup, isForgotPassword]); // Removed phone from dependencies
 
+  const clearSignupSession = () => {
+    sessionStorage.removeItem("signup_email");
+    sessionStorage.removeItem("signup_step");
+    setStep("form");
+  };
+
   const validateForm = () => {
     try {
       emailSchema.parse(email);
@@ -171,6 +177,7 @@ const Auth = () => {
         } else if (emailExists) {
           toast.error("Este e-mail já está cadastrado. Por favor, faça login ou recupere sua senha.");
           setLoading(false);
+          clearSignupSession();
           setIsSignup(false); // Alternar para modo de login para facilitar
           return;
         }
@@ -237,6 +244,7 @@ const Auth = () => {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Login realizado!");
+        clearSignupSession();
       }
     } catch (error: unknown) {
       toast.error((error as Error).message);
@@ -283,6 +291,7 @@ const Auth = () => {
       });
       if (error) throw error;
       toast.success("Conta confirmada com sucesso!");
+      clearSignupSession();
       navigate("/dashboard");
     } catch (error: unknown) {
       toast.error((error as Error).message || "Erro ao verificar código.");
@@ -671,7 +680,10 @@ const Auth = () => {
                       {isSignup ? "Já tem uma conta?" : "Não tem uma conta?"}{" "}
                       <button
                         type="button"
-                        onClick={() => setIsSignup(!isSignup)}
+                        onClick={() => {
+                          if (isSignup) clearSignupSession();
+                          setIsSignup(!isSignup);
+                        }}
                         className="text-primary font-black hover:underline"
                       >
                         {isSignup ? "Fazer Login" : "Cadastrar Agora"}
