@@ -175,7 +175,7 @@ const Auth = () => {
         if (checkError) {
           console.error("Erro ao verificar e-mail:", checkError);
         } else if (emailExists) {
-          toast.error("Este e-mail já está cadastrado. Por favor, faça login ou recupere sua senha.");
+          toast.error("Este e-mail já está em uso (confirmado ou pendente). Se não confirmou sua conta, procure o link no seu e-mail ou tente fazer login.");
           setLoading(false);
           clearSignupSession();
           setIsSignup(false); // Alternar para modo de login para facilitar
