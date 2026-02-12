@@ -43,6 +43,7 @@ const Auth = () => {
   const [referrerEmail, setReferrerEmail] = useState("");
   const [referrerValid, setReferrerValid] = useState<boolean | null>(null);
   const [checkingReferrer, setCheckingReferrer] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
   // Worker specific
   const [withdrawMethod, setWithdrawMethod] = useState<"iban" | "multicaixa">("iban");
@@ -167,10 +168,16 @@ const Auth = () => {
     setLoading(true);
     try {
       if (isSignup) {
-        // Verificar se o e-mail já existe na tabela de perfis
+        // Verificar se o e-mail já existe na tabela de perfis (ou auth.users via RPC atualizada)
+        setIsCheckingEmail(true);
+        // Simular um pequeno delay para mostrar a barra de progresso (opcional, mas melhora a UX)
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        const emailToCheck = email.trim().toLowerCase();
         const { data: emailExists, error: checkError } = await supabase.rpc("check_email_exists", {
-          p_email: email,
+          p_email: emailToCheck,
         });
+        setIsCheckingEmail(false);
 
         if (checkError) {
           console.error("Erro ao verificar e-mail:", checkError);
@@ -345,8 +352,27 @@ const Auth = () => {
         >
           {loading && (
             <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-md">
-              <Loader2 className="w-10 h-10 text-primary animate-spin" />
-              <p className="mt-4 text-xs font-black uppercase tracking-[0.3em] text-primary">Processando</p>
+              {isCheckingEmail ? (
+                <div className="w-64 space-y-4">
+                  <div className="flex justify-between text-xs font-black uppercase tracking-widest text-primary">
+                    <span>Verificando Disponibilidade do E-mail</span>
+                    <span className="animate-pulse">...</span>
+                  </div>
+                  <div className="h-1 w-full bg-primary/20 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: "0%" }}
+                      animate={{ width: "100%" }}
+                      transition={{ duration: 1.5, ease: "easeInOut", repeat: Infinity }}
+                      className="h-full bg-gradient-to-r from-primary/50 via-primary to-primary/50"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                  <p className="mt-4 text-xs font-black uppercase tracking-[0.3em] text-primary">Processando</p>
+                </>
+              )}
             </div>
           )}
 
@@ -537,6 +563,20 @@ const Auth = () => {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {isSignup && !isForgotPassword && (
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 mb-6">
+                      <div className="flex gap-3">
+                        <Shield className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <p className="text-[11px] font-black uppercase tracking-widest text-orange-500">Atenção</p>
+                          <p className="text-xs text-orange-200/80 leading-relaxed font-medium">
+                            Só é permitida <strong>1 conta por e-mail</strong>. Cadastros não confirmados em <strong>1 hora</strong> são excluídos automaticamente.
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
                   {isSignup && !isForgotPassword && (
                     <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 mb-6">
                       <div className="space-y-2">
