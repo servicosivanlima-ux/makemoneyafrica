@@ -295,7 +295,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                         </div>
                         <div>
                           <h3 className="font-display font-bold text-xl text-white mb-1">
-                            {campaign?.plan_type === "ta_no_limao" ? "Tá no Limão" : "Kwanza"} - {campaign?.plan_name}
+                            {campaign?.plan_type === "ta_no_limao" || campaign?.plan_type === "limao" ? "Tá no Limão" : "Kwanza"} - {campaign?.plan_name}
                           </h3>
                           <div className="flex items-center gap-3">
                             <span className="px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20 text-primary font-bold uppercase tracking-widest text-[9px]">
@@ -365,7 +365,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                                   onChange={(url) => setProofs({ ...proofs, follow: url })}
                                 />
 
-                                {campaign?.plan_type === "kwanza" && (
+                                {(campaign?.plan_type === "kwanza" || (campaign?.plan_type !== "ta_no_limao" && campaign?.plan_type !== "limao")) && (
                                   <div className="grid grid-cols-1 gap-4">
                                     <FileUpload
                                       userId={user.id}
@@ -479,7 +479,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                       </div>
                       <div>
                         <h3 className="font-display font-bold text-xl text-white mb-1">
-                          {campaign.plan_type === "ta_no_limao" ? "Tá no Limão" : "Kwanza"} - {campaign.plan_name}
+                          {campaign.plan_type === "ta_no_limao" || campaign.plan_type === "limao" ? "Tá no Limão" : "Kwanza"} - {campaign.plan_name}
                         </h3>
                         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                           <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 font-bold uppercase tracking-widest text-[10px]">
@@ -491,7 +491,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-2">
-                          {campaign.plan_type === "ta_no_limao"
+                          {campaign.plan_type === "ta_no_limao" || campaign.plan_type === "limao"
                             ? "Acção: Seguir a página"
                             : "Interacção: Seguir + Gostar + Comentar + Partilhar"}
                         </p>
@@ -579,3 +579,4 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
 };
 
 export default TasksList;
+
