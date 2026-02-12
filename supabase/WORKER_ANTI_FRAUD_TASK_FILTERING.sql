@@ -64,7 +64,7 @@ BEGIN
   IF v_campaign.completed_count >= v_campaign.target_count THEN RAISE EXCEPTION 'Esta campanha já atingiu o limite de tarefas'; END IF;
 
   -- Pricing Logic
-  v_reward_amount := CASE WHEN v_campaign.plan_type = 'ta_no_limao' THEN 200 ELSE 600 END;
+  v_reward_amount := CASE WHEN v_campaign.plan_type = 'ta_no_limao' THEN 100 ELSE 200 END;
 
   -- Atomic claim (reuse available task slot if exists, otherwise create new)
   UPDATE tasks SET worker_id = v_worker_id, status = 'in_progress', assigned_at = now() 

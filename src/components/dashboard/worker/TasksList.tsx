@@ -501,7 +501,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                       <div className="text-right">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Recompensa</p>
                         <p className="text-2xl font-black font-display text-gold">
-                          {campaign.plan_type === "ta_no_limao" ? "100" : "200"} Kz
+                          {campaign.plan_type === "ta_no_limao" || campaign.plan_type === "limao" ? "100" : "200"} Kz
                         </p>
                       </div>
                       <button
@@ -541,7 +541,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                       </div>
                       <div>
                         <p className="font-bold text-white text-sm">
-                          {campaign?.plan_type === "limao" ? "Tá no Limão" : "Kwanza"} - {campaign?.plan_name}
+                          {campaign?.plan_type === "ta_no_limao" || campaign?.plan_type === "limao" ? "Tá no Limão" : "Kwanza"} - {campaign?.plan_name}
                         </p>
                         <div className="flex items-center gap-2 mt-0.5">
                           {getTaskStatusBadge(task.status)}

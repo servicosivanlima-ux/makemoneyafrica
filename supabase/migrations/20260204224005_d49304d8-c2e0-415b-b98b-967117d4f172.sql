@@ -48,7 +48,7 @@ BEGIN
   END IF;
   
   -- Calculate reward based on plan type
-  v_reward_amount := CASE WHEN v_campaign.plan_type = 'ta_no_limao' THEN 200 ELSE 600 END;
+  v_reward_amount := CASE WHEN v_campaign.plan_type = 'ta_no_limao' THEN 100 ELSE 200 END;
   
   -- First try to claim an existing available task
   UPDATE tasks
