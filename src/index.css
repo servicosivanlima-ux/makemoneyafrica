@@ -1,0 +1,190 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@100;200;300;400;500;600;700;800;900&family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 
+   Make Money With Lima - Design System 2.0
+   Style: Ultra-Modern Fintech / SaaS Premium
+*/
+
+@layer base {
+  :root {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 5.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 84 100% 59%;
+    /* Neon Lime */
+    --primary-foreground: 240 5.9% 10%;
+
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 80%;
+
+    --accent: 84 100% 59%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --gold: 48 100% 50%;
+    --gold-foreground: 240 10% 3.9%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 84 100% 59%;
+
+    --radius: 1rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border selection:bg-primary/30 selection:text-white;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    scroll-behavior: smooth;
+    letter-spacing: -0.01em;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Outfit', 'Space Grotesk', sans-serif;
+    @apply tracking-tight font-bold;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    background: rgba(17, 17, 19, 0.8);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  .glass-card-lime {
+    background: rgba(132, 255, 46, 0.05);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(132, 255, 46, 0.15);
+  }
+
+  .glass-card-gold {
+    background: rgba(255, 204, 0, 0.05);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 204, 0, 0.15);
+  }
+
+  .text-gradient-neon {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-green-400 to-lime-300;
+  }
+
+  .text-gradient-gold-flare {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-600;
+  }
+
+  .bg-mesh-gradient {
+    background-image:
+      radial-gradient(at 0% 0%, hsla(84, 100%, 59%, 0.15) 0, transparent 50%),
+      radial-gradient(at 50% 0%, hsla(240, 100%, 50%, 0.1) 0, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(48, 100%, 50%, 0.1) 0, transparent 50%);
+  }
+
+  .shadow-neon {
+    box-shadow: 0 0 25px -5px hsl(var(--primary) / 0.4);
+  }
+
+  .shadow-gold-premium {
+    box-shadow: 0 0 35px -5px hsl(48 100% 50% / 0.25);
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .mask-radial {
+    mask-image: radial-gradient(circle at center, black, transparent 80%);
+  }
+
+  .bg-gradient-lime {
+    @apply bg-gradient-to-br from-primary via-green-400 to-lime-300;
+  }
+
+  .bg-gradient-dark {
+    @apply bg-gradient-to-b from-[#1A1A1C] to-[#0A0A0B];
+  }
+}
+
+@layer components {
+  .btn-premium {
+    @apply relative overflow-hidden bg-primary text-primary-foreground font-bold px-8 py-4 rounded-full transition-all duration-500 hover:shadow-neon hover:scale-105 active:scale-95 before:absolute before:inset-0 before:bg-white/20 before:translate-x-[-100%] hover:before:translate-x-[100%] before:transition-transform before:duration-700;
+  }
+
+  .btn-outline-premium {
+    @apply border border-white/10 bg-white/5 backdrop-blur-md text-foreground font-semibold px-8 py-4 rounded-full transition-all duration-300 hover:bg-white/10 hover:border-primary/50 hover:text-primary active:scale-95;
+  }
+
+  .btn-primary {
+    @apply relative overflow-hidden bg-primary text-primary-foreground font-black uppercase tracking-widest text-[11px] px-8 py-4 rounded-xl transition-all duration-300 hover:shadow-neon hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center;
+  }
+
+  .btn-secondary {
+    @apply border border-white/10 bg-white/5 backdrop-blur-md text-foreground font-black uppercase tracking-widest text-[11px] px-8 py-4 rounded-xl transition-all duration-300 hover:bg-white/10 hover:border-primary/50 hover:text-primary active:scale-95 disabled:opacity-50 flex items-center justify-center;
+  }
+
+  .btn-gold {
+    @apply relative overflow-hidden bg-gradient-to-r from-yellow-600 via-amber-500 to-yellow-600 text-black font-black uppercase tracking-widest text-[11px] px-8 py-4 rounded-xl transition-all duration-300 hover:shadow-gold-premium hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center border border-yellow-400/50;
+    box-shadow: 0 0 15px -5px rgba(255, 191, 0, 0.4);
+  }
+
+  .btn-gold-outline {
+    @apply border-2 border-yellow-600/50 bg-yellow-600/5 text-yellow-500 font-black uppercase tracking-widest text-[11px] px-8 py-4 rounded-xl transition-all duration-300 hover:bg-yellow-600/10 hover:border-yellow-500 hover:text-yellow-400 active:scale-95 disabled:opacity-50 flex items-center justify-center;
+  }
+
+  .nav-link {
+    @apply text-sm font-medium text-muted-foreground transition-all duration-300 hover:text-primary relative py-2 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full;
+  }
+
+  .card-premium-glow {
+    @apply glass-card rounded-2xl relative transition-all duration-500 hover:shadow-neon hover:border-primary/40 cursor-default;
+  }
+
+  .section-container {
+    @apply max-w-7xl mx-auto px-6 lg:px-12 py-24 lg:py-32 flex flex-col items-center justify-center;
+  }
+
+  .container-app {
+    @apply max-w-7xl mx-auto px-6 lg:px-12 w-full;
+  }
+
+  .input-premium {
+    @apply w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all duration-300;
+  }
+}

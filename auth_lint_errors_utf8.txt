@@ -1,0 +1,11 @@
+﻿
+C:\Users\Ivan Lima\Documents\makemoneyafrica\src\pages\Auth.tsx
+  107:6   warning  React Hook useEffect has missing dependencies: 'phone' and 'phoneConfigs'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  150:23  error    Unexpected any. Specify a different type                                                                                       @typescript-eslint/no-explicit-any
+  205:21  error    Unexpected any. Specify a different type                                                                                       @typescript-eslint/no-explicit-any
+  228:21  error    Unexpected any. Specify a different type                                                                                       @typescript-eslint/no-explicit-any
+  251:21  error    Unexpected any. Specify a different type                                                                                       @typescript-eslint/no-explicit-any
+  274:21  error    Unexpected any. Specify a different type                                                                                       @typescript-eslint/no-explicit-any
+
+Γ£û 6 problems (5 errors, 1 warning)
+
