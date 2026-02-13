@@ -41,7 +41,7 @@ const AdminSidebar = ({
 }: AdminSidebarProps) => {
   const menuItems = [
     { icon: LayoutDashboard, label: "Painel", section: "dashboard" },
-    { icon: FileText, label: "Gestão", section: "campanhas" },
+    { icon: FileText, label: "Gestão", section: "campanhas", count: stats?.pendingPayments },
     { icon: CreditCard, label: "Pagamentos", section: "pagamentos", count: stats?.pendingPayments },
     { icon: Wallet, label: "Depósitos", section: "depositos", count: stats?.pendingDeposits },
     { icon: Users, label: "Utilizadores", section: "usuarios" },
