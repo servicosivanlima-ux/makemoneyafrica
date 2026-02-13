@@ -410,6 +410,8 @@ const WorkerSettings = ({ user }: WorkerSettingsProps) => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
+            {/* Honeypot input to trick browser autofill */}
+            <input type="text" name="email" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
             <div className="space-y-2">
               <Label htmlFor="facebook_link" className="flex items-center gap-2">
                 <Facebook className="w-4 h-4 text-blue-500" />
@@ -457,17 +459,26 @@ const WorkerSettings = ({ user }: WorkerSettingsProps) => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="youtube_link" className="flex items-center gap-2">
+              {/* Using a non-standard ID and name to avoid browser autofill detection */}
+              <Label htmlFor="yt_url_handle" className="flex items-center gap-2">
                 <Youtube className="w-4 h-4 text-red-500" />
                 Canal do YouTube
               </Label>
               <Input
-                id="youtube_link"
+                id="yt_url_handle"
+                name="yt_url_handle"
                 placeholder="https://youtube.com/@seu.canal"
                 value={socials.youtube_link}
-                onChange={(e) => setSocials({ ...socials, youtube_link: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  // Immediate filter if browser tries to paste an email
+                  if (val.includes("@") && !val.includes("youtube.com") && !val.includes("youtu.be")) {
+                    return;
+                  }
+                  setSocials({ ...socials, youtube_link: val });
+                }}
                 className="bg-background focus-visible:ring-primary"
-                autoComplete="new-password"
+                autoComplete="new-social-link"
                 spellCheck={false}
               />
               <p className="text-[9px] text-red-500 font-bold uppercase tracking-tight">* Obrigatório</p>
