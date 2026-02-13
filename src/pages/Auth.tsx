@@ -1,14 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Eye, EyeOff, ArrowLeft, Briefcase, Wallet, Shield, Loader2, ArrowRight, User, Lock, Mail, Smartphone, Globe, UserPlus } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, Briefcase, Wallet, Shield, Loader2, ArrowRight, User, Lock, Mail, Smartphone, Globe, UserPlus, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import ThemeToggle from "@/components/ThemeToggle";
+import { phoneConfigs, formatPhone, validatePhone } from "@/lib/phone-utils";
 
 const emailSchema = z.string().email("Email inválido").max(255, "Email muito longo");
-const passwordSchema = z.string().min(6, "Mínimo 6 caracteres").max(72, "Senha muito longa");
+const passwordSchema = z.string()
+  .min(8, "A senha deve ter pelo menos 8 caracteres")
+  .regex(/[0-9]/, "A senha deve conter pelo menos um número")
+  .regex(/[^A-Za-z0-9]/, "A senha deve conter pelo menos um caractere especial")
+  .max(72, "Senha muito longa");
 const phoneSchema = z.string().min(9, "Telefone inválido").max(20, "Telefone inválido");
 const nameSchema = z.string().min(2, "Nome muito curto").max(100, "Nome muito longo");
 
@@ -44,6 +49,11 @@ const Auth = () => {
   const [referrerValid, setReferrerValid] = useState<boolean | null>(null);
   const [checkingReferrer, setCheckingReferrer] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [honeypot, setHoneypot] = useState("");
+
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Worker specific
   const [withdrawMethod, setWithdrawMethod] = useState<"iban" | "multicaixa">("iban");
@@ -57,12 +67,7 @@ const Auth = () => {
     youtube: "",
   });
 
-  const phoneConfigs: Record<string, { placeholder: string; label: string; prefix: string }> = {
-    AO: { placeholder: "9xx xxx xxx", label: "WhatsApp de Angola", prefix: "+244" },
-    PT: { placeholder: "9xx xxx xxx", label: "WhatsApp de Portugal", prefix: "+351" },
-    MZ: { placeholder: "8xx xxx xxx", label: "WhatsApp de Moçambique", prefix: "+258" },
-    BR: { placeholder: "(xx) 9xxxx-xxxx", label: "WhatsApp do Brasil", prefix: "+55" },
-  };
+  // phoneConfigs is imported from @/lib/phone-utils
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -99,16 +104,19 @@ const Auth = () => {
   }, [email, step]);
 
   useEffect(() => {
-    if (isSignup && !isForgotPassword) {
-      const config = phoneConfigs[country];
-      if (config) {
-        // Only set the prefix if the phone field is empty or doesn't have the current prefix
-        if (!phone || !phone.trim().startsWith(config.prefix)) {
-          setPhone(config.prefix + " ");
-        }
+    if (!loading && step === "form") {
+      if (isSignup) {
+        nameInputRef.current?.focus();
+      } else {
+        emailInputRef.current?.focus();
       }
     }
-  }, [country, isSignup, isForgotPassword]); // Removed phone from dependencies
+  }, [isSignup, isForgotPassword, loading, step]);
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value, country);
+    setPhone(formatted);
+  };
 
   const clearSignupSession = () => {
     sessionStorage.removeItem("signup_email");
@@ -126,11 +134,28 @@ const Auth = () => {
       }
       passwordSchema.parse(password);
       if (isSignup) {
-        nameSchema.parse(pageName);
-        phoneSchema.parse(phone);
+        nameSchema.parse(pageName.trim());
+        phoneSchema.parse(phone.trim());
         if (userType === "client" && !pageName.trim()) {
           toast.error("Preencha o nome da página ou empresa");
           return false;
+        }
+        if (password !== confirmPassword) {
+          toast.error("As senhas da conta não coincidem.");
+          return false;
+        }
+        if (!acceptTerms) {
+          toast.error("Você deve aceitar os Termos e Condições para continuar.");
+          return false;
+        }
+
+        // Validação extra de NIF para Angola/Portugal
+        if (accountType === "company" && (country === "AO" || country === "PT")) {
+          const cleanNif = nif.replace(/\D/g, "");
+          if (cleanNif.length !== 9) {
+            toast.error("O NIF deve ter exatamente 9 dígitos.");
+            return false;
+          }
         }
       }
       return true;
@@ -144,6 +169,7 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (honeypot) return; // Silent discard for bots
     if (isForgotPassword) {
       if (!email) {
         toast.error("Por favor, insira seu e-mail.");
@@ -168,37 +194,59 @@ const Auth = () => {
     setLoading(true);
     try {
       if (isSignup) {
-        // Verificar se o e-mail já existe na tabela de perfis (ou auth.users via RPC atualizada)
+        // === ETAPA 1: Verificar duplicidade de dados sensíveis ===
         setIsCheckingEmail(true);
-        // Simular um pequeno delay para mostrar a barra de progresso (opcional, mas melhora a UX)
         await new Promise(resolve => setTimeout(resolve, 800));
 
         const emailToCheck = email.trim().toLowerCase();
-        const { data: emailExists, error: checkError } = await supabase.rpc("check_email_exists", {
+        const phoneToCheck = phone.trim();
+        const nameToCheck = pageName.trim();
+        const nifToCheck = accountType === "company" ? nif.trim() : null;
+
+        const { data: duplicates, error: checkError } = await (supabase.rpc as any)("check_registration_duplicates", {
           p_email: emailToCheck,
+          p_phone: phoneToCheck,
+          p_nif: nifToCheck,
+          p_name: nameToCheck
         });
+
         setIsCheckingEmail(false);
 
+        // Se houver QUALQUER erro na verificação, bloquear o cadastro
         if (checkError) {
-          console.error("Erro ao verificar e-mail:", checkError);
-        } else if (emailExists) {
-          toast.error("Este e-mail já está em uso (confirmado ou pendente). Se não confirmou sua conta, procure o link no seu e-mail ou tente fazer login.");
+          console.error("Erro ao verificar duplicidade:", checkError);
+          toast.error("Erro ao verificar dados. Tente novamente.");
           setLoading(false);
-          clearSignupSession();
-          setIsSignup(false); // Alternar para modo de login para facilitar
           return;
         }
 
-        // Validate referrer email if provided (for clients)
+        // Se houver duplicatas, mostrar TODOS os erros e permanecer no formulário
+        if (duplicates && duplicates.length > 0) {
+          duplicates.forEach((dup: any) => {
+            if (dup.field_name === 'email') {
+              toast.error("Este e-mail já está em uso. Tente fazer login.");
+            } else if (dup.field_name === 'phone') {
+              toast.error("Este número de WhatsApp já está cadastrado.");
+            } else if (dup.field_name === 'nif') {
+              toast.error("Este NIF já está cadastrado para outra empresa.");
+            } else if (dup.field_name === 'name') {
+              toast.error("Este nome já está em uso. Escolha um nome diferente.");
+            }
+          });
+          setLoading(false);
+          return; // BLOQUEAR — não enviar OTP, não mudar de tela
+        }
+
+        // === ETAPA 2: Validar indicador (apenas clientes) ===
         let validReferrerEmail: string | null = null;
         if (userType === "client" && referrerEmail.trim()) {
-          // Prevent self-referral
-          if (referrerEmail.trim().toLowerCase() === email.trim().toLowerCase()) {
+          const trimmedReferrer = referrerEmail.trim().toLowerCase();
+          if (trimmedReferrer === emailToCheck) {
             toast.error("Não pode indicar-se a si mesmo.");
             setLoading(false);
             return;
           }
-          const { data: validationResult, error: validationError } = await (supabase.rpc as any)("validate_referrer", { p_email: referrerEmail.trim() });
+          const { data: validationResult, error: validationError } = await (supabase.rpc as any)("validate_referrer", { p_email: trimmedReferrer });
 
           if (validationError) {
             console.error("Erro na validação do indicador:", validationError);
@@ -221,23 +269,39 @@ const Auth = () => {
           validReferrerEmail = referrerEmail.trim();
         }
 
+        // === ETAPA 3: Criar conta (só chega aqui se não houver duplicatas) ===
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: email.trim(),
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/auth`,
             data: {
-              full_name: pageName,
-              phone,
+              full_name: pageName.trim(),
+              phone: phone.trim(),
               user_type: userType,
               account_type: accountType,
-              page_name: pageName,
+              page_name: pageName.trim(),
               country,
-              nif: accountType === "company" ? nif : null,
+              nif: accountType === "company" ? nif.trim() : null,
               referrer_email: validReferrerEmail,
             }
           }
         });
+
+        // Verificar erro do Supabase Auth ANTES de ir para OTP
+        if (error) {
+          toast.error(error.message);
+          setLoading(false);
+          return;
+        }
+
+        // Supabase retorna user falso para emails existentes (sem identities)
+        if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
+          toast.error("Este e-mail já está cadastrado. Tente fazer login.");
+          setLoading(false);
+          return;
+        }
+
         if (data.user) {
           if (data.session) {
             toast.success("Cadastro realizado com sucesso!");
@@ -263,11 +327,29 @@ const Auth = () => {
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      toast.error("As senhas não coincidem.");
+      toast.error("As senhas não coincidem");
       return;
     }
-    if (password.length < 6) {
-      toast.error("A senha deve ter pelo menos 6 caracteres.");
+
+    // Password complexity check
+    if (password.length < 8) {
+      toast.error("A senha deve ter pelo menos 8 caracteres");
+      return;
+    }
+    if (!/[0-9]/.test(password)) {
+      toast.error("A senha deve conter pelo menos um número");
+      return;
+    }
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      toast.error("A senha deve conter pelo menos um caractere especial");
+      return;
+    }
+    try {
+      passwordSchema.parse(password);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      }
       return;
     }
     setLoading(true);
@@ -447,7 +529,15 @@ const Auth = () => {
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Seu E-mail</label>
                     <div className="relative">
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-premium pl-11" placeholder="exemplo@email.com" required />
+                      <input
+                        ref={emailInputRef}
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="input-premium pl-11"
+                        placeholder="exemplo@email.com"
+                        required
+                      />
                     </div>
                   </div>
 
@@ -596,6 +686,7 @@ const Auth = () => {
                         <div className="relative">
                           <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                           <input
+                            ref={nameInputRef}
                             type="text"
                             value={pageName}
                             onChange={(e) => setPageName(e.target.value)}
@@ -612,7 +703,15 @@ const Auth = () => {
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Email</label>
                     <div className="relative">
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-premium pl-11" placeholder="exemplo@email.com" required />
+                      <input
+                        ref={emailInputRef}
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="input-premium pl-11"
+                        placeholder="exemplo@email.com"
+                        required
+                      />
                     </div>
                   </div>
 
@@ -651,13 +750,29 @@ const Auth = () => {
                           <input
                             type="tel"
                             value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
+                            onChange={handlePhoneChange} // Changed to handlePhoneChange
                             className="input-premium pl-11"
                             placeholder={phoneConfigs[country]?.placeholder}
                             required
                           />
                         </div>
                       </div>
+                      {accountType === "company" && (
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">NIF da Empresa</label>
+                          <div className="relative">
+                            <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <input
+                              type="text"
+                              value={nif}
+                              onChange={(e) => setNif(e.target.value.replace(/\D/g, ""))}
+                              className="input-premium pl-11"
+                              placeholder="Ex: 500123456"
+                              required
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -682,7 +797,86 @@ const Auth = () => {
                         {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
                       </button>
                     </div>
+                    {isSignup && (
+                      <div className="pt-2 px-1">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Força da Senha</span>
+                          <span className={`text-[9px] font-black uppercase tracking-widest ${password.length >= 8 && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)
+                            ? "text-primary"
+                            : password.length >= 6
+                              ? "text-orange-500"
+                              : "text-red-500"
+                            }`}>
+                            {password.length >= 8 && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)
+                              ? "Forte"
+                              : password.length >= 6
+                                ? "Média"
+                                : "Fraca"}
+                          </span>
+                        </div>
+                        <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-500 ${password.length >= 8 && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)
+                              ? "w-full bg-primary"
+                              : password.length >= 6
+                                ? "w-2/3 bg-orange-500"
+                                : password.length > 0
+                                  ? "w-1/3 bg-red-500"
+                                  : "w-0"
+                              }`}
+                          />
+                        </div>
+                        <p className="text-[8px] text-muted-foreground mt-1 leading-tight">
+                          Mínimo de 8 caracteres, números e símbolos.
+                        </p>
+                      </div>
+                    )}
                   </div>
+
+                  {isSignup && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Confirmar Senha</label>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="input-premium pl-11"
+                          placeholder="••••••••"
+                          required
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Honeypot field (hidden from users) */}
+                  <div className="hidden" aria-hidden="true">
+                    <input
+                      type="text"
+                      name="website"
+                      value={honeypot}
+                      onChange={(e) => setHoneypot(e.target.value)}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+                  </div>
+
+                  {isSignup && (
+                    <div className="flex items-start gap-3 px-1 pt-2">
+                      <input
+                        type="checkbox"
+                        id="terms"
+                        checked={acceptTerms}
+                        onChange={(e) => setAcceptTerms(e.target.checked)}
+                        className="mt-1 w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary focus:ring-offset-0"
+                        required
+                      />
+                      <label htmlFor="terms" className="text-[10px] leading-relaxed text-muted-foreground">
+                        Eu li e aceito os <Link to="/termos#aceitacao" className="text-primary hover:underline font-bold">Termos e Condições</Link> e a <Link to="/termos#privacidade" className="text-primary hover:underline font-bold">Política de Privacidade</Link>.
+                      </label>
+                    </div>
+                  )}
 
                   {isSignup && userType === "client" && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-6 pt-4">

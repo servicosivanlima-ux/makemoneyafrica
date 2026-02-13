@@ -76,8 +76,18 @@ const ClientSettings = ({ user }: ClientSettingsProps) => {
       toast.error("As senhas não coincidem");
       return;
     }
-    if (newPassword.length < 6) {
-      toast.error("A senha deve ter pelo menos 6 caracteres");
+
+    // Password complexity check
+    if (newPassword.length < 8) {
+      toast.error("A senha deve ter pelo menos 8 caracteres");
+      return;
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      toast.error("A senha deve conter pelo menos um número");
+      return;
+    }
+    if (!/[^A-Za-z0-9]/.test(newPassword)) {
+      toast.error("A senha deve conter pelo menos um caractere especial");
       return;
     }
 

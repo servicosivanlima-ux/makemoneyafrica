@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { phoneConfigs, formatPhone, validatePhone } from "@/lib/phone-utils";
 import {
   User as UserIcon,
   Phone,
@@ -144,6 +145,12 @@ const WorkerSettings = ({ user }: WorkerSettingsProps) => {
     }
   };
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!profile) return;
+    const formatted = formatPhone(e.target.value, profile.country);
+    setProfile({ ...profile, phone: formatted });
+  };
+
   const handleUpdatePassword = async () => {
     if (!newPassword || !confirmPassword) {
       toast.error("Preencha ambos os campos de senha");
@@ -153,8 +160,18 @@ const WorkerSettings = ({ user }: WorkerSettingsProps) => {
       toast.error("As senhas não coincidem");
       return;
     }
-    if (newPassword.length < 6) {
-      toast.error("A senha deve ter pelo menos 6 caracteres");
+
+    // Password complexity check
+    if (newPassword.length < 8) {
+      toast.error("A senha deve ter pelo menos 8 caracteres");
+      return;
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      toast.error("A senha deve conter pelo menos um número");
+      return;
+    }
+    if (!/[^A-Za-z0-9]/.test(newPassword)) {
+      toast.error("A senha deve conter pelo menos um caractere especial");
       return;
     }
 
@@ -203,28 +220,60 @@ const WorkerSettings = ({ user }: WorkerSettingsProps) => {
   };
 
   const handleSavePersonalInfo = async () => {
-    if (!profile.full_name || !profile.phone) {
-      toast.error("Nome e Telefone são obrigatórios!");
+    if (!profile) return;
+
+    if (!validatePhone(profile.phone, profile.country)) {
+      toast.error(`O telefone deve ter ${phoneConfigs[profile.country]?.digits} dígitos.`);
       return;
     }
 
-    setSaving(true);
+    setSaving(true); // Changed from setLoading to setSaving
     try {
+      // Verificar duplicidade se o telefone ou nome mudaram
+      const { data: currentProfile } = await supabase
+        .from("profiles")
+        .select("phone, full_name")
+        .eq("user_id", user.id)
+        .single();
+
+      if (currentProfile && (currentProfile.phone !== profile.phone || currentProfile.full_name !== profile.full_name)) {
+        const { data: duplicates } = await (supabase.rpc as any)("check_registration_duplicates", {
+          p_email: profile.email,
+          p_phone: profile.phone,
+          p_name: profile.full_name
+        });
+
+        if (duplicates && duplicates.length > 0) {
+          const phoneDup = duplicates.find((d: any) => d.field_name === 'phone');
+          const nameDup = duplicates.find((d: any) => d.field_name === 'name');
+
+          if (phoneDup && currentProfile.phone !== profile.phone) {
+            toast.error("Este número de WhatsApp já está em uso.");
+            setSaving(false);
+            return;
+          }
+          if (nameDup && currentProfile.full_name !== profile.full_name) {
+            toast.error("Este nome já está em uso por outro usuário.");
+            setSaving(false);
+            return;
+          }
+        }
+      }
+
       const { error } = await supabase
         .from("profiles")
         .update({
           full_name: profile.full_name,
           phone: profile.phone,
           country: profile.country,
-          personal_info_editable: false // LOCK after save
         })
         .eq("user_id", user.id);
 
       if (error) throw error;
       toast.success("Informações pessoais actualizadas!");
-      loadProfile();
+      loadProfile(); // Added to refresh profile data after save
     } catch (error: any) {
-      toast.error("Erro ao actualizar informações");
+      toast.error(error.message);
     } finally {
       setSaving(false);
     }
@@ -302,11 +351,11 @@ const WorkerSettings = ({ user }: WorkerSettingsProps) => {
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 id="phone"
-                value={profile.phone}
-                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                className="pl-10 bg-background"
-                placeholder="+244 9XX XXX XXX"
-                disabled={!profile.personal_info_editable}
+                value={profile?.phone || ""}
+                onChange={handlePhoneChange}
+                placeholder={phoneConfigs[profile?.country || "AO"]?.placeholder}
+                className="pl-10 bg-background" // Added bg-background back
+                disabled={!profile?.personal_info_editable}
               />
             </div>
             {!profile.personal_info_editable && (
