@@ -6,6 +6,7 @@
 
 -- 1. Update the View for Workers
 -- Now it excludes campaigns where the worker has already had an approved or pending task for that specific link.
+DROP VIEW IF EXISTS public.available_campaigns_for_workers;
 CREATE OR REPLACE VIEW public.available_campaigns_for_workers WITH (security_invoker = on) AS
 SELECT c.*
 FROM public.campaigns c
