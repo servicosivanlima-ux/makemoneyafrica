@@ -39,6 +39,9 @@ const UserActivityReport = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [userTypeFilter, setUserTypeFilter] = useState("all");
+    const [minBalance, setMinBalance] = useState<number | "">("");
+    const [minAccess, setMinAccess] = useState<number | "">("");
+    const [sortBy, setSortBy] = useState<"created_at" | "wallet_balance" | "access_count" | "tasks">("created_at");
 
     useEffect(() => {
         fetchActivityData();
@@ -87,15 +90,24 @@ const UserActivityReport = () => {
         }
     };
 
-    const filteredData = activities.filter(user => {
-        const matchesSearch =
-            user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const filteredData = activities
+        .filter(user => {
+            const matchesSearch =
+                user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                user.email?.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchesType = userTypeFilter === "all" || user.user_type === userTypeFilter;
+            const matchesType = userTypeFilter === "all" || user.user_type === userTypeFilter;
+            const matchesBalance = minBalance === "" || user.wallet_balance >= Number(minBalance);
+            const matchesAccess = minAccess === "" || user.access_count >= Number(minAccess);
 
-        return matchesSearch && matchesType;
-    });
+            return matchesSearch && matchesType && matchesBalance && matchesAccess;
+        })
+        .sort((a, b) => {
+            if (sortBy === "wallet_balance") return b.wallet_balance - a.wallet_balance;
+            if (sortBy === "access_count") return (b.access_count || 0) - (a.access_count || 0);
+            if (sortBy === "tasks") return (b.tasks_completed + b.campaigns_created) - (a.tasks_completed + a.campaigns_created);
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
 
     const formatDate = (date: string | null) => {
         if (!date) return "Nuncas";
@@ -119,27 +131,63 @@ const UserActivityReport = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-white/5 p-4 rounded-2xl border border-white/5">
-                <div className="relative w-full md:w-96">
+            <div className="flex flex-col space-y-4 md:space-y-0 md:space-x-4 md:flex-row justify-between items-start md:items-center bg-white/5 p-6 rounded-2xl border border-white/5">
+                <div className="relative w-full md:w-80">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                         placeholder="Pesquisar por nome ou e-mail..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-black/20 border-white/10"
+                        className="pl-10 bg-black/20 border-white/10 h-11"
                     />
                 </div>
 
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                    <Filter className="w-4 h-4 text-muted-foreground" />
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full flex-1 md:w-auto">
+                    <div className="relative">
+                        <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground opacity-50" />
+                        <Input
+                            type="number"
+                            placeholder="Mín. Saldo"
+                            value={minBalance}
+                            onChange={(e) => setMinBalance(e.target.value === "" ? "" : Number(e.target.value))}
+                            className="pl-10 bg-black/20 border-white/10 h-11 text-xs"
+                        />
+                    </div>
+
+                    <div className="relative">
+                        <LogIn className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground opacity-50" />
+                        <Input
+                            type="number"
+                            placeholder="Mín. Acessos"
+                            value={minAccess}
+                            onChange={(e) => setMinAccess(e.target.value === "" ? "" : Number(e.target.value))}
+                            className="pl-10 bg-black/20 border-white/10 h-11 text-xs"
+                        />
+                    </div>
+
                     <Select value={userTypeFilter} onValueChange={setUserTypeFilter}>
-                        <SelectTrigger className="w-full md:w-48 bg-black/20 border-white/10">
-                            <SelectValue placeholder="Tipo de Utilizador" />
+                        <SelectTrigger className="bg-black/20 border-white/10 h-11 text-xs">
+                            <SelectValue placeholder="Tipo" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todos os Tipos</SelectItem>
                             <SelectItem value="worker">Trabalhadores</SelectItem>
                             <SelectItem value="client">Clientes</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+                        <SelectTrigger className="bg-black/20 border-white/10 h-11 text-xs">
+                            <div className="flex items-center gap-2">
+                                <Filter className="w-3 h-3 text-primary" />
+                                <SelectValue placeholder="Ordenar" />
+                            </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="created_at">Data de Cadastro</SelectItem>
+                            <SelectItem value="wallet_balance">Maior Saldo</SelectItem>
+                            <SelectItem value="access_count">Mais Acessos</SelectItem>
+                            <SelectItem value="tasks">Mais Actividade</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
