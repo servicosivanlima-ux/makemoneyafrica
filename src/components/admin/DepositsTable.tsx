@@ -25,6 +25,22 @@ const DepositsTable = () => {
 
     useEffect(() => {
         loadDeposits();
+
+        // Subscribe to realtime updates for deposits
+        const channel = supabase
+            .channel("admin-deposits-all")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "deposits" },
+                () => {
+                    loadDeposits();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const loadDeposits = async () => {

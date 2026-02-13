@@ -79,6 +79,25 @@ const Admin = () => {
 
   useEffect(() => {
     checkAdminAccess();
+
+    // Subscribe to all operational tables to keep the Admin dashboard in sync
+    const tables = ["campaigns", "tasks", "withdrawals", "deposits", "kyc_documents", "profiles"];
+    const channels = tables.map(table => {
+      return supabase
+        .channel(`admin-sync-${table}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: table },
+          () => {
+            loadDashboardData();
+          }
+        )
+        .subscribe();
+    });
+
+    return () => {
+      channels.forEach(channel => supabase.removeChannel(channel));
+    };
   }, []);
 
   const checkAdminAccess = async () => {
@@ -320,7 +339,7 @@ const Admin = () => {
       setLoading(true);
       toast.info("Iniciando reset do sistema...");
 
-      const { data, error } = await supabase.rpc('system_cleanup_v2');
+      const { data, error } = await (supabase.rpc as any)('system_cleanup_v2');
 
       if (error) {
         console.error("Error calling system_cleanup_v2:", error);
@@ -334,7 +353,7 @@ const Admin = () => {
       }
 
       toast.success("Sistema resetado com sucesso!");
-      console.log("Cleanup details:", data.deleted_counts);
+      console.log("Cleanup details:", (data as any).deleted_counts);
       await loadDashboardData();
     } catch (error) {
       console.error("Error resetting system:", error);

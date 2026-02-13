@@ -31,6 +31,45 @@ const ClientWallet = ({ user }: ClientWalletProps) => {
 
     useEffect(() => {
         loadWalletData();
+
+        // Subscribe to balance changes in profile
+        const profileChannel = supabase
+            .channel(`profile-balance-${user.id}`)
+            .on(
+                "postgres_changes",
+                {
+                    event: "UPDATE",
+                    schema: "public",
+                    table: "profiles",
+                    filter: `user_id=eq.${user.id}`
+                },
+                () => {
+                    loadWalletData();
+                }
+            )
+            .subscribe();
+
+        // Subscribe to deposit changes for this client
+        const depositsChannel = supabase
+            .channel(`client-deposits-${user.id}`)
+            .on(
+                "postgres_changes",
+                {
+                    event: "*",
+                    schema: "public",
+                    table: "deposits",
+                    filter: `client_id=eq.${user.id}`
+                },
+                () => {
+                    loadWalletData();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(profileChannel);
+            supabase.removeChannel(depositsChannel);
+        };
     }, [user.id]);
 
     const loadWalletData = async () => {

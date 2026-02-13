@@ -60,6 +60,40 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
 
   useEffect(() => {
     loadData();
+
+    // Subscribe to realtime updates for campaigns
+    const campaignsChannel = supabase
+      .channel("campaigns-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "campaigns" },
+        () => {
+          loadData();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to realtime updates for tasks assigned to this worker
+    const tasksChannel = supabase
+      .channel(`worker-tasks-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tasks",
+          filter: `worker_id=eq.${user.id}`
+        },
+        () => {
+          loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(campaignsChannel);
+      supabase.removeChannel(tasksChannel);
+    };
   }, [user.id]);
 
   const availableCampaigns = campaigns

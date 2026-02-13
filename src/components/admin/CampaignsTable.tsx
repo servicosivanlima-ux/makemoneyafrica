@@ -69,6 +69,22 @@ const CampaignsTable = () => {
 
     useEffect(() => {
         loadCampaigns();
+
+        // Subscribe to realtime updates for campaigns
+        const channel = supabase
+            .channel("admin-campaigns-all")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "campaigns" },
+                () => {
+                    loadCampaigns();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const handleDelete = async (campaignId: string) => {
