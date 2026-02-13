@@ -19,7 +19,7 @@ AND NOT EXISTS (
     AND t.status IN ('in_progress', 'pending_review', 'approved')
     AND (
         -- For 'Followers' plan: Block by page_link
-        (c.plan_type IN ('ta_no_limao', 'limao') AND past_c.page_link = c.page_link AND past_c.plan_type IN ('ta_no_limao', 'limao'))
+        (c.plan_type = 'ta_no_limao' AND past_c.page_link = c.page_link AND past_c.plan_type = 'ta_no_limao')
         OR
         -- For 'Kwanza' plan: Block by video_link (specific post)
         (c.plan_type = 'kwanza' AND past_c.video_link = c.video_link AND past_c.plan_type = 'kwanza')
@@ -64,7 +64,7 @@ BEGIN
   IF v_campaign.completed_count >= v_campaign.target_count THEN RAISE EXCEPTION 'Esta campanha já atingiu o limite de tarefas'; END IF;
 
   -- Pricing Logic
-  v_reward_amount := CASE WHEN v_campaign.plan_type IN ('ta_no_limao', 'limao') THEN 100 ELSE 200 END;
+  v_reward_amount := CASE WHEN v_campaign.plan_type = 'ta_no_limao' THEN 100 ELSE 200 END;
 
   -- Atomic claim (reuse available task slot if exists, otherwise create new)
   UPDATE tasks SET worker_id = v_worker_id, status = 'in_progress', assigned_at = now() 
