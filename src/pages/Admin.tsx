@@ -319,7 +319,7 @@ const Admin = () => {
         activeCampaigns: activeCampaignsCount || 0,
         totalRevenue: Math.max(0, finalRevenue),
         pendingDeposits: pendingDepositsCount || 0,
-        pendingKyc: kycData?.length || 0,
+        pendingKyc: kycData?.filter((k: any) => k.status === 'pending').length || 0,
         totalReferrals: referralStatsData?.total_referrals || 0,
         totalCommissionsPaid: totalCommissions
       });
