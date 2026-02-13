@@ -334,7 +334,7 @@ BEGIN
   SELECT * INTO v_campaign FROM campaigns WHERE id = p_campaign_id AND status = 'active';
   IF v_campaign.id IS NULL THEN RAISE EXCEPTION 'Campanha não encontrada ou não está ativa'; END IF;
   IF v_campaign.completed_count >= v_campaign.target_count THEN RAISE EXCEPTION 'Esta campanha já atingiu o limite de tarefas'; END IF;
-  v_reward_amount := CASE WHEN v_campaign.plan_type = 'ta_no_limao' THEN 200 ELSE 600 END;
+  v_reward_amount := CASE WHEN v_campaign.plan_type = 'ta_no_limao' THEN 100 ELSE 200 END;
   UPDATE tasks SET worker_id = v_worker_id, status = 'in_progress', assigned_at = now() WHERE campaign_id = p_campaign_id AND status = 'available' AND worker_id IS NULL RETURNING id INTO v_task_id;
   IF v_task_id IS NULL THEN
     INSERT INTO tasks (campaign_id, worker_id, status, reward_amount, assigned_at) VALUES (p_campaign_id, v_worker_id, 'in_progress', v_reward_amount, now()) RETURNING id INTO v_task_id;

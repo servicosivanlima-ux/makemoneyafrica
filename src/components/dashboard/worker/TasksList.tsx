@@ -87,10 +87,10 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
       if (campaignsError) throw campaignsError;
       setCampaigns(campaignsData || []);
 
-      // Load my tasks
+      // Load my tasks with campaign details joined
       const { data: tasksData, error: tasksError } = await supabase
         .from("tasks")
-        .select("*")
+        .select("*, campaign:campaigns(*)")
         .eq("worker_id", user.id)
         .order("assigned_at", { ascending: false });
 
@@ -285,7 +285,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
             {myTasks
               .filter(t => t.status === "in_progress")
               .map((task) => {
-                const campaign = campaigns.find(c => c.id === task.campaign_id);
+                const campaign = task.campaign;
                 return (
                   <div key={task.id} className="card-premium-glow p-6 border-primary/30 group">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
@@ -532,7 +532,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
               .filter(t => t.status !== "in_progress" && t.status !== "available")
               .slice(0, 10)
               .map((task) => {
-                const campaign = campaigns.find(c => c.id === task.campaign_id);
+                const campaign = task.campaign;
                 return (
                   <div key={task.id} className="card-premium-glow p-4 flex items-center justify-between border-white/5 bg-white/[0.02]">
                     <div className="flex items-center gap-4">
