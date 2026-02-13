@@ -174,8 +174,8 @@ const WithdrawalRequest = ({ user, balance, onWithdrawalComplete }: WithdrawalRe
             <div className="text-3xl font-bold text-gradient-gold">
               {formatPrice(balance)}
             </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              Levantamento mínimo: {formatPrice(MIN_WITHDRAWAL)}
+            <p className="text-sm font-medium text-primary mt-1">
+              {balance >= MIN_WITHDRAWAL ? "Já pode efectuar saques" : `Limite para levantamento de ${formatPrice(MIN_WITHDRAWAL)}`}
             </p>
           </div>
 

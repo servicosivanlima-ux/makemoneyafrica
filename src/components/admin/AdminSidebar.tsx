@@ -22,19 +22,33 @@ interface AdminSidebarProps {
   onSectionChange?: (section: string) => void;
   isOpen?: boolean;
   onClose?: () => void;
+  stats?: {
+    pendingPayments: number;
+    pendingTasks: number;
+    pendingWithdrawals: number;
+    pendingDeposits: number;
+    pendingKyc: number;
+  };
 }
 
-const AdminSidebar = ({ onLogout, activeSection = "dashboard", onSectionChange, isOpen, onClose }: AdminSidebarProps) => {
+const AdminSidebar = ({
+  onLogout,
+  activeSection = "dashboard",
+  onSectionChange,
+  isOpen,
+  onClose,
+  stats
+}: AdminSidebarProps) => {
   const menuItems = [
     { icon: LayoutDashboard, label: "Painel", section: "dashboard" },
     { icon: FileText, label: "Gestão", section: "campanhas" },
-    { icon: CreditCard, label: "Pagamentos", section: "pagamentos" },
-    { icon: Wallet, label: "Depósitos", section: "depositos" },
+    { icon: CreditCard, label: "Pagamentos", section: "pagamentos", count: stats?.pendingPayments },
+    { icon: Wallet, label: "Depósitos", section: "depositos", count: stats?.pendingDeposits },
     { icon: Users, label: "Utilizadores", section: "usuarios" },
     { icon: UserPlus, label: "Indicações", section: "indicacoes" },
-    { icon: CheckSquare, label: "Tarefas", section: "tarefas" },
-    { icon: Shield, label: "Verificações", section: "verificacoes" },
-    { icon: Wallet, label: "Levantamentos", section: "saques" },
+    { icon: CheckSquare, label: "Tarefas", section: "tarefas", count: stats?.pendingTasks },
+    { icon: Shield, label: "Verificações", section: "verificacoes", count: stats?.pendingKyc },
+    { icon: Wallet, label: "Levantamentos", section: "saques", count: stats?.pendingWithdrawals },
     { icon: Shield, label: "Antifraude", section: "antifraude" },
     { icon: Bell, label: "Notificações", section: "notificacoes" },
     { icon: FileText, label: "Registos", section: "registros" },
@@ -102,7 +116,13 @@ const AdminSidebar = ({ onLogout, activeSection = "dashboard", onSectionChange, 
                     "w-5 h-5 transition-transform group-hover:scale-110",
                     isActive ? "text-primary" : "text-muted-foreground/40"
                   )} />
-                  <span className="font-black text-xs uppercase tracking-[0.15em]">{item.label}</span>
+                  <span className="font-black text-xs uppercase tracking-[0.15em] flex-1">{item.label}</span>
+
+                  {item.count !== undefined && item.count > 0 && (
+                    <span className="flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-black shadow-neon">
+                      {item.count}
+                    </span>
+                  )}
 
                   {isActive && (
                     <div className="absolute right-4 w-1.5 h-1.5 rounded-full bg-primary shadow-neon" />

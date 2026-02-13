@@ -402,6 +402,7 @@ const Admin = () => {
         }}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        stats={stats}
       />
 
       <main className="lg:ml-64 relative min-h-screen">
