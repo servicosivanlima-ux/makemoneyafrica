@@ -96,6 +96,12 @@ const WorkerSettings = ({ user }: WorkerSettingsProps) => {
 
       if (profileData) {
         const pd = profileData as any;
+        // Filter out values that look like email addresses from youtube_link
+        const rawYoutube = pd.youtube_link || "";
+        const filteredYoutube = (rawYoutube.includes("@") && !rawYoutube.includes("youtube.com") && !rawYoutube.includes("youtu.be"))
+          ? ""
+          : rawYoutube;
+
         setProfile({
           full_name: pd.full_name || "",
           email: pd.email || "",
@@ -104,7 +110,7 @@ const WorkerSettings = ({ user }: WorkerSettingsProps) => {
           facebook_link: pd.facebook_link,
           instagram_link: pd.instagram_link,
           tiktok_link: pd.tiktok_link,
-          youtube_link: pd.youtube_link,
+          youtube_link: filteredYoutube,
           personal_info_editable: pd.personal_info_editable ?? true,
           country: pd.country || "AO",
         });
@@ -113,7 +119,7 @@ const WorkerSettings = ({ user }: WorkerSettingsProps) => {
           facebook_link: pd.facebook_link || "",
           instagram_link: pd.instagram_link || "",
           tiktok_link: pd.tiktok_link || "",
-          youtube_link: pd.youtube_link || "",
+          youtube_link: filteredYoutube,
         });
       }
 
@@ -194,6 +200,13 @@ const WorkerSettings = ({ user }: WorkerSettingsProps) => {
     const hasAtLeastOne = socials.facebook_link || socials.instagram_link || socials.tiktok_link || socials.youtube_link;
     if (!hasAtLeastOne) {
       toast.error("Vincule pelo menos uma rede social!");
+      setSaving(false);
+      return;
+    }
+
+    // Anti-email validation for YouTube link
+    if (socials.youtube_link && socials.youtube_link.includes("@") && !socials.youtube_link.includes("youtube.com") && !socials.youtube_link.includes("youtu.be")) {
+      toast.error("O link do YouTube não pode ser um e-mail!");
       setSaving(false);
       return;
     }
@@ -454,7 +467,7 @@ const WorkerSettings = ({ user }: WorkerSettingsProps) => {
                 value={socials.youtube_link}
                 onChange={(e) => setSocials({ ...socials, youtube_link: e.target.value })}
                 className="bg-background focus-visible:ring-primary"
-                autoComplete="off"
+                autoComplete="new-password"
                 spellCheck={false}
               />
               <p className="text-[9px] text-red-500 font-bold uppercase tracking-tight">* Obrigatório</p>
