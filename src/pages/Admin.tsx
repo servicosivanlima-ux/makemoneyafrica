@@ -35,6 +35,7 @@ import KycTable from "@/components/admin/KycTable";
 import ChatModeration from "@/components/admin/ChatModeration";
 import WorkerChat from "@/components/dashboard/worker/WorkerChat";
 import ReferralsManager from "@/components/admin/ReferralsManager";
+import UserActivityReport from "@/components/admin/UserActivityReport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface DashboardStats {
@@ -782,11 +783,9 @@ const Admin = () => {
             <div className="card-premium-glow p-8 mb-8">
               <h2 className="text-lg font-display font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
                 <FileText className="w-6 h-6 text-primary" />
-                Logs do Sistema
+                Relatórios de Actividade
               </h2>
-              <p className="text-muted-foreground mt-2">
-                Rastreabilidade completa de acções e auditoria técnica.
-              </p>
+              <UserActivityReport />
             </div>
           )}
 

@@ -90,6 +90,8 @@ const Dashboard = () => {
               if (type === "worker") {
                 checkWorkerVerification(session.user.id);
               }
+              // Track user access
+              (supabase.rpc as any)("track_user_access", { p_user_id: session.user.id });
             }
           });
       }
@@ -130,6 +132,8 @@ const Dashboard = () => {
                   if (type === "worker") {
                     checkWorkerVerification(session?.user.id || "");
                   }
+                  // Track user access
+                  (supabase.rpc as any)("track_user_access", { p_user_id: session?.user.id });
                 }
               });
           });
