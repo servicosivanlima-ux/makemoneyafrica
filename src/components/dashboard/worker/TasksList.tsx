@@ -327,7 +327,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                               Finalizar
                             </button>
                           </DialogTrigger>
-                          <DialogContent className="sm:max-w-lg bg-background/95 backdrop-blur-xl border-white/10 shadow-2xl">
+                          <DialogContent className="sm:max-w-lg bg-background/95 backdrop-blur-xl border-white/10 shadow-2xl max-h-[85vh] overflow-y-auto">
                             <DialogHeader>
                               <DialogTitle className="text-2xl font-black font-display text-white uppercase tracking-tight">Finalizar Tarefa</DialogTitle>
                             </DialogHeader>

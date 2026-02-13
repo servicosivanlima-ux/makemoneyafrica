@@ -27,6 +27,7 @@ const ClientWallet = ({ user }: ClientWalletProps) => {
     const [requesting, setRequesting] = useState(false);
     const [amount, setAmount] = useState("");
     const [proofUrl, setProofUrl] = useState("");
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     useEffect(() => {
         loadWalletData();
@@ -86,6 +87,7 @@ const ClientWallet = ({ user }: ClientWalletProps) => {
             toast.success("Pedido de depósito enviado!");
             setAmount("");
             setProofUrl("");
+            setIsDialogOpen(false);
             loadWalletData();
         } catch (error) {
             console.error("Error requesting deposit:", error);
@@ -125,7 +127,7 @@ const ClientWallet = ({ user }: ClientWalletProps) => {
                         <p className="text-[10px] font-black uppercase tracking-widest text-primary mt-2">Pronto para Investir em Campanhas</p>
                     </div>
 
-                    <Dialog>
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>
                             <Button className="btn-primary px-8 h-14 rounded-2xl group">
                                 <Plus className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform" />
