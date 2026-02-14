@@ -68,40 +68,40 @@ BEGIN
   -- Start cleanup operations (all within this transaction)
   
   -- 1. Delete tasks (references campaigns via FK)
-  DELETE FROM public.tasks;
+  DELETE FROM public.tasks WHERE true;
   GET DIAGNOSTICS v_tasks_count = ROW_COUNT;
   
   -- 2. Delete campaigns
-  DELETE FROM public.campaigns;
+  DELETE FROM public.campaigns WHERE true;
   GET DIAGNOSTICS v_campaigns_count = ROW_COUNT;
   
   -- 3. Delete withdrawals
-  DELETE FROM public.withdrawals;
+  DELETE FROM public.withdrawals WHERE true;
   GET DIAGNOSTICS v_withdrawals_count = ROW_COUNT;
   
   -- 4. Delete deposits
-  DELETE FROM public.deposits;
+  DELETE FROM public.deposits WHERE true;
   GET DIAGNOSTICS v_deposits_count = ROW_COUNT;
   
   -- 5. Delete notifications
-  DELETE FROM public.notifications;
+  DELETE FROM public.notifications WHERE true;
   GET DIAGNOSTICS v_notifications_count = ROW_COUNT;
   
   -- 6. Delete blocked_devices
-  DELETE FROM public.blocked_devices;
+  DELETE FROM public.blocked_devices WHERE true;
   GET DIAGNOSTICS v_blocked_devices_count = ROW_COUNT;
   
   -- 7. Delete chat_messages
-  DELETE FROM public.chat_messages;
+  DELETE FROM public.chat_messages WHERE true;
   GET DIAGNOSTICS v_chat_messages_count = ROW_COUNT;
   
   -- 8. Delete chat_moderation
-  DELETE FROM public.chat_moderation;
+  DELETE FROM public.chat_moderation WHERE true;
   GET DIAGNOSTICS v_chat_moderation_count = ROW_COUNT;
   
   -- 9. Delete kyc_documents
   BEGIN
-    DELETE FROM public.kyc_documents;
+    DELETE FROM public.kyc_documents WHERE true;
     GET DIAGNOSTICS v_kyc_documents_count = ROW_COUNT;
   EXCEPTION WHEN undefined_table THEN
     v_kyc_documents_count := 0;
@@ -109,7 +109,7 @@ BEGIN
   
   -- 10. Delete withdraw_methods
   BEGIN
-    DELETE FROM public.withdraw_methods;
+    DELETE FROM public.withdraw_methods WHERE true;
     GET DIAGNOSTICS v_withdraw_methods_count = ROW_COUNT;
   EXCEPTION WHEN undefined_table THEN
     v_withdraw_methods_count := 0;
@@ -117,7 +117,7 @@ BEGIN
 
   -- 11. Delete referral_commissions
   BEGIN
-    DELETE FROM public.referral_commissions;
+    DELETE FROM public.referral_commissions WHERE true;
     GET DIAGNOSTICS v_referral_commissions_count = ROW_COUNT;
   EXCEPTION WHEN undefined_table THEN
     v_referral_commissions_count := 0;
@@ -138,7 +138,7 @@ BEGIN
   GET DIAGNOSTICS v_profiles_reset_count = ROW_COUNT;
 
   -- 13. Clear old system logs (except this reset log which will be inserted next)
-  DELETE FROM public.system_logs;
+  DELETE FROM public.system_logs WHERE true;
   
   -- Build deleted counts JSON
   v_deleted_counts := jsonb_build_object(
