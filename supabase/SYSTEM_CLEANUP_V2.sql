@@ -40,6 +40,7 @@ DECLARE
   v_chat_moderation_count INTEGER := 0;
   v_kyc_documents_count INTEGER := 0;
   v_withdraw_methods_count INTEGER := 0;
+  v_referral_commissions_count INTEGER := 0;
   v_profiles_reset_count INTEGER := 0;
 BEGIN
   -- Get the caller's user ID
@@ -94,11 +95,11 @@ BEGIN
   DELETE FROM public.chat_messages;
   GET DIAGNOSTICS v_chat_messages_count = ROW_COUNT;
   
-  -- 8. Delete chat_moderation (preserves is_banned state for next cleanup but clears it)
+  -- 8. Delete chat_moderation
   DELETE FROM public.chat_moderation;
   GET DIAGNOSTICS v_chat_moderation_count = ROW_COUNT;
   
-  -- 9. Delete kyc_documents (if table exists)
+  -- 9. Delete kyc_documents
   BEGIN
     DELETE FROM public.kyc_documents;
     GET DIAGNOSTICS v_kyc_documents_count = ROW_COUNT;
@@ -106,17 +107,38 @@ BEGIN
     v_kyc_documents_count := 0;
   END;
   
-  -- 10. Delete withdraw_methods (if table exists)
+  -- 10. Delete withdraw_methods
   BEGIN
     DELETE FROM public.withdraw_methods;
     GET DIAGNOSTICS v_withdraw_methods_count = ROW_COUNT;
   EXCEPTION WHEN undefined_table THEN
     v_withdraw_methods_count := 0;
   END;
+
+  -- 11. Delete referral_commissions
+  BEGIN
+    DELETE FROM public.referral_commissions;
+    GET DIAGNOSTICS v_referral_commissions_count = ROW_COUNT;
+  EXCEPTION WHEN undefined_table THEN
+    v_referral_commissions_count := 0;
+  END;
   
-  -- 11. Reset wallet_balance to 0 for all profiles
-  UPDATE public.profiles SET wallet_balance = 0 WHERE wallet_balance IS DISTINCT FROM 0;
+  -- 12. Reset profiles (balances, access metrics, and referrals)
+  UPDATE public.profiles 
+  SET 
+    wallet_balance = 0, 
+    access_count = 0, 
+    last_access = NULL,
+    referred_by = NULL
+  WHERE 
+    wallet_balance != 0 
+    OR access_count != 0 
+    OR last_access IS NOT NULL
+    OR referred_by IS NOT NULL;
   GET DIAGNOSTICS v_profiles_reset_count = ROW_COUNT;
+
+  -- 13. Clear old system logs (except this reset log which will be inserted next)
+  DELETE FROM public.system_logs;
   
   -- Build deleted counts JSON
   v_deleted_counts := jsonb_build_object(
@@ -130,7 +152,8 @@ BEGIN
     'chat_moderation', v_chat_moderation_count,
     'kyc_documents', v_kyc_documents_count,
     'withdraw_methods', v_withdraw_methods_count,
-    'profiles_balance_reset', v_profiles_reset_count
+    'referral_commissions', v_referral_commissions_count,
+    'profiles_reset', v_profiles_reset_count
   );
   
   -- Log the action
