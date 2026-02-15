@@ -549,15 +549,17 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                         <p className="text-xs text-muted-foreground mt-2">
                           {campaign.plan_type === "ta_no_limao" || campaign.plan_type === "limao"
                             ? "Acção: Seguir a página"
-                            : "Interacção: Seguir + Gostar + Comentar + Partilhar"}
+                            : campaign.platform === "youtube"
+                              ? "Tarefa: Assistir Vídeo + Engajamento"
+                              : "Interacção: Seguir + Gostar + Comentar + Partilhar"}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Recompensa</p>
-                        <p className="text-2xl font-black font-display text-gold">
-                          {campaign.plan_type === "ta_no_limao" || campaign.plan_type === "limao" ? "100" : "200"} Kz
+                        <p className={`text-2xl font-black font-display ${campaign.platform === "youtube" ? "text-red-500" : "text-gold"}`}>
+                          {campaign.reward || (campaign.plan_type === "ta_no_limao" || campaign.plan_type === "limao" ? "100" : "200")} Kz
                         </p>
                       </div>
                       <button
@@ -598,6 +600,9 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                       <div>
                         <p className="font-bold text-white text-sm">
                           {campaign?.plan_type === "ta_no_limao" || campaign?.plan_type === "limao" ? "Tá no Limão" : "Kwanza"} - {campaign?.plan_name}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">
+                          {task.reward_amount} Kz • {new Date(task.completed_at || "").toLocaleDateString()}
                         </p>
                         <div className="flex items-center gap-2 mt-0.5">
                           {getTaskStatusBadge(task.status)}

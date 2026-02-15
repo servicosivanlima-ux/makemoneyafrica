@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Trash2, Eye, Loader2, Search } from "lucide-react";
+import { Trash2, Eye, Loader2, Search, Youtube, Facebook, Instagram, Music2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -136,6 +136,16 @@ const CampaignsTable = () => {
         );
     };
 
+    const getPlatformIcon = (platform: string) => {
+        switch (platform.toLowerCase()) {
+            case 'youtube': return <Youtube className="w-3 h-3 text-red-500" />;
+            case 'facebook': return <Facebook className="w-3 h-3 text-blue-500" />;
+            case 'instagram': return <Instagram className="w-3 h-3 text-pink-500" />;
+            case 'tiktok': return <Music2 className="w-3 h-3 text-slate-400" />;
+            default: return null;
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center py-12">
@@ -176,7 +186,10 @@ const CampaignsTable = () => {
                                         <p className="text-[10px] text-muted-foreground italic">{campaign.client?.email}</p>
                                     </td>
                                     <td className="px-4 py-4">
-                                        <span className="text-sm font-semibold">{campaign.plan_name}</span>
+                                        <div className="flex items-center gap-2">
+                                            {getPlatformIcon(campaign.platform)}
+                                            <span className="text-sm font-semibold">{campaign.plan_name}</span>
+                                        </div>
                                     </td>
                                     <td className="px-4 py-4">
                                         {getStatusBadge(campaign.status)}

@@ -43,7 +43,7 @@ const GainSimulator = () => {
                         transition={{ delay: 0.1 }}
                         className="text-muted-foreground text-lg mb-10 leading-relaxed"
                     >
-                        Não é magia, é trabalho real. Simule os seus ganhos diários baseados no número de tarefas que completa nas suas horas vagas.
+                        Não é magia, é trabalho real. Simule os seus ganhos diários baseados no número de vídeos que assiste e acções que completa. Ganhos dinâmicos baseados no tempo de visualização!
                     </motion.p>
 
                     <div className="space-y-6 max-w-md">

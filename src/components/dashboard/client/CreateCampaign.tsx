@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Check, Zap, Star, MessageCircle, Clock, AlertTriangle, Copy, Upload, Loader2, Wallet } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Zap, Star, Youtube, MessageCircle, Clock, AlertTriangle, Copy, Upload, Loader2, Wallet } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import FileUpload from "../common/FileUpload";
 interface CreateCampaignProps {
@@ -324,20 +324,20 @@ const CreateCampaign = ({
           </p>
         </button>
 
-        <button onClick={() => setPlanType("kwanza")} className={`p-6 rounded-xl border-2 transition-all text-left ${planType === "kwanza" ? "border-gold bg-gold/10" : "border-border hover:border-gold/50"}`}>
+        <button onClick={() => setPlanType("kwanza")} className={`p-6 rounded-xl border-2 transition-all text-left ${planType === "kwanza" ? "border-red-500 bg-red-500/10" : "border-border hover:border-red-500/50"}`}>
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-full bg-gradient-gold flex items-center justify-center">
-              <Star className="w-6 h-6 text-gold-foreground" />
+            <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center">
+              <Youtube className="w-6 h-6 text-white" />
             </div>
             <div>
               <h3 className="font-display font-bold text-lg text-foreground">
                 Kwanza
               </h3>
-              <p className="text-sm text-muted-foreground">Engajamento completo</p>
+              <p className="text-sm text-red-500 font-bold">Promoção YouTube V2</p>
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            Seguir + Curtir + Comentar + Partilhar. Máximo engajamento garantido.
+            Visualização Monitorada + Engajamento (Subs + Like). Máxima retenção garantida.
           </p>
         </button>
       </div>
@@ -355,12 +355,9 @@ const CreateCampaign = ({
               Premium
             </span>}
             <h4 className="font-semibold text-foreground">{plan.name}</h4>
-            <div className="text-2xl font-bold text-gradient-lime mt-1">
-              {plan.count.toLocaleString()}
+            <div className={`text-2xl font-black mb-1 ${planType === "limao" ? "text-primary" : "text-red-500"}`}>
+              {plan.count} {planType === "limao" ? "seguidores" : "visualizações"}
             </div>
-            <p className="text-xs text-muted-foreground mb-1">
-              {planType === "limao" ? "seguidores" : "ações"}
-            </p>
             <div className="flex items-center gap-1 text-[10px] text-muted-foreground mb-2">
               <Clock className="w-3 h-3 text-primary/60" />
               Entrega: <b>{getDeadline(plan.count)}</b>
@@ -452,9 +449,9 @@ const CreateCampaign = ({
 
           {planType === "kwanza" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="p-6 bg-gold/5 border border-gold/20 rounded-2xl">
-                <label className="block text-sm font-bold text-gold mb-3 flex items-center gap-2">
-                  <Star className="w-4 h-4" />
+              <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-2xl shadow-sm">
+                <label className="block text-sm font-bold text-red-500 mb-3 flex items-center gap-2">
+                  <Youtube className="w-4 h-4" />
                   Configuração de Vídeo YouTube
                 </label>
                 <input
@@ -477,7 +474,7 @@ const CreateCampaign = ({
                   <div className="mt-4 p-4 bg-black/40 rounded-xl border border-white/5 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-black uppercase text-muted-foreground">ID do Vídeo:</span>
-                      <span className="text-[10px] font-mono text-gold">{videoId}</span>
+                      <span className="text-[10px] font-mono text-red-500">{videoId}</span>
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase text-muted-foreground">Duração em Segundos:</label>
@@ -495,7 +492,7 @@ const CreateCampaign = ({
                     </div>
                     <div className="flex items-center justify-between pt-2 border-t border-white/5">
                       <span className="text-[10px] font-black uppercase text-muted-foreground">Recompensa (1:1):</span>
-                      <span className="text-sm font-black text-primary">{videoDuration} Kz / tarefa</span>
+                      <span className="text-sm font-black text-red-500">{videoDuration} Kz / visualização</span>
                     </div>
                   </div>
                 )}

@@ -1,4 +1,4 @@
-import { Check, Star, Zap, Clock, ShieldCheck, Trophy } from "lucide-react";
+import { Check, Star, Zap, Clock, ShieldCheck, Trophy, Youtube } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -132,12 +132,12 @@ const Plans = () => {
         {/* Plan Section 2 */}
         <div>
           <div className="flex items-center gap-4 mb-10">
-            <div className="w-12 h-12 rounded-2xl bg-yellow-500/20 border border-yellow-500/30 flex items-center justify-center">
-              <Star className="w-6 h-6 text-yellow-500" />
+            <div className="w-12 h-12 rounded-2xl bg-red-500/20 border border-red-500/30 flex items-center justify-center">
+              <Youtube className="w-6 h-6 text-red-500" />
             </div>
             <div>
               <h3 className="text-3xl font-black text-foreground uppercase tracking-tighter">Plano "Kwanza"</h3>
-              <p className="text-xs text-yellow-500 font-black uppercase tracking-[0.2em] mt-1">Engajamento Elite (Seguir + Curtir + Comentar + Partilhar)</p>
+              <p className="text-xs text-red-500 font-black uppercase tracking-[0.2em] mt-1">Promoção de Vídeo YouTube (Visualização + Engajamento Elite)</p>
             </div>
           </div>
 
@@ -161,12 +161,10 @@ const Plans = () => {
                   {plan.popular && <span className="px-3 py-1 bg-yellow-500 text-black text-[10px] font-black rounded-full uppercase tracking-tighter shadow-gold-premium">Elite</span>}
                 </div>
 
-                <div className="mb-6">
-                  <div className={`text-5xl font-black tracking-tighter ${plan.premium ? 'text-yellow-500' : 'text-yellow-500'}`}>
-                    {plan.actions.toLocaleString()}
-                  </div>
-                  <div className="text-xs uppercase tracking-widest text-muted-foreground font-bold mt-1">Acções Reais</div>
+                <div className={`text-5xl font-black tracking-tighter ${plan.premium ? 'text-yellow-500' : 'text-red-500'}`}>
+                  {plan.actions.toLocaleString()}
                 </div>
+                <div className="text-xs uppercase tracking-widest text-muted-foreground font-bold mt-1">Visualizações</div>
 
                 <div className="space-y-4 mb-8">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">

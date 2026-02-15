@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, X, Eye, Loader2, Upload } from "lucide-react";
+import { Check, X, Eye, Loader2, Upload, Youtube, Facebook, Instagram, Music2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -121,6 +121,16 @@ const PaymentsTable = ({ campaigns, onRefresh }: PaymentsTableProps) => {
     return colors[platform] || "bg-muted text-muted-foreground";
   };
 
+  const getPlatformIcon = (platform: string) => {
+    switch (platform.toLowerCase()) {
+      case 'youtube': return <Youtube className="w-3 h-3" />;
+      case 'facebook': return <Facebook className="w-3 h-3" />;
+      case 'instagram': return <Instagram className="w-3 h-3" />;
+      case 'tiktok': return <Music2 className="w-3 h-3" />;
+      default: return null;
+    }
+  };
+
   if (campaigns.length === 0) {
     return (
       <div className="card-elevated p-8 text-center">
@@ -169,7 +179,8 @@ const PaymentsTable = ({ campaigns, onRefresh }: PaymentsTableProps) => {
                     <span className="font-medium text-foreground">{campaign.plan_name}</span>
                   </td>
                   <td className="px-4 py-4">
-                    <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${getPlatformColor(campaign.platform)}`}>
+                    <span className={`px-2 py-1 rounded text-xs font-medium capitalize flex items-center gap-1 w-fit ${getPlatformColor(campaign.platform)}`}>
+                      {getPlatformIcon(campaign.platform)}
                       {campaign.platform}
                     </span>
                   </td>

@@ -163,7 +163,7 @@ const ClientCampaigns = ({
     <div className="grid gap-6">
       {campaigns.map(campaign => {
         const whatsappNumber = "244923066682";
-        const whatsappMessage = encodeURIComponent(`Olá! Gostaria de confirmar o pagamento da minha campanha:\n\n` + `📦 Plano: ${campaign.plan_type === "ta_no_limao" ? "Tá no Limão" : "Kwanza"} - ${campaign.plan_name}\n` + `🎯 Meta: ${campaign.target_count} ${campaign.plan_type === "ta_no_limao" ? "seguidores" : "ações"}\n` + `💰 Valor: ${formatPrice(campaign.price)}\n` + `📱 Plataforma: ${campaign.platform.charAt(0).toUpperCase() + campaign.platform.slice(1)}\n` + `🔗 Link: ${campaign.page_link}\n\n` + `Segue em anexo o comprovativo de pagamento.`);
+        const whatsappMessage = encodeURIComponent(`Olá! Gostaria de confirmar o pagamento da minha campanha:\n\n` + `📦 Plano: ${campaign.plan_type === "ta_no_limao" || campaign.plan_type === "limao" ? "Tá no Limão" : "Kwanza"} - ${campaign.plan_name}\n` + `🎯 Meta: ${campaign.target_count} ${campaign.plan_type === "ta_no_limao" || campaign.plan_type === "limao" ? "seguidores" : campaign.platform === "youtube" ? "visualizações" : "ações"}\n` + `💰 Valor: ${formatPrice(campaign.price)}\n` + `📱 Plataforma: ${campaign.platform.charAt(0).toUpperCase() + campaign.platform.slice(1)}\n` + `🔗 Link: ${campaign.page_link}\n\n` + `Segue em anexo o comprovativo de pagamento.`);
 
         return <div key={campaign.id} className="card-premium-glow p-6 group relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/10 transition-all" />
