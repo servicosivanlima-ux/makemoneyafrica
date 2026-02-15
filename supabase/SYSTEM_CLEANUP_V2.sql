@@ -1,9 +1,9 @@
 -- ============================================
--- SYSTEM CLEANUP V2: Secure Reset RPC with Audit Logging
--- Execute this script in Supabase SQL Editor
+-- LIMPEZA DO SISTEMA V2: RPC de Reinicialização Segura com Log de Auditoria
+-- Execute este script no Editor SQL do Supabase
 -- ============================================
 
--- 1. Create system_logs table for auditing
+-- 1. Criar tabela system_logs para auditoria
 CREATE TABLE IF NOT EXISTS public.system_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   admin_id UUID REFERENCES auth.users(id) NOT NULL,
@@ -12,15 +12,15 @@ CREATE TABLE IF NOT EXISTS public.system_logs (
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
--- Enable RLS on system_logs
+-- Ativar RLS na system_logs
 ALTER TABLE public.system_logs ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies for system_logs (admins can only view, inserts via SECURITY DEFINER)
+-- Políticas RLS para system_logs (administradores só podem visualizar, inserções via SECURITY DEFINER)
 DROP POLICY IF EXISTS "Admins can view system logs" ON public.system_logs;
 CREATE POLICY "Admins can view system logs" ON public.system_logs
   FOR SELECT USING (public.has_role(auth.uid(), 'admin'));
 
--- 2. Create the system_cleanup_v2 RPC function
+-- 2. Criar a função RPC system_cleanup_v2
 CREATE OR REPLACE FUNCTION public.system_cleanup_v2()
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -43,10 +43,10 @@ DECLARE
   v_referral_commissions_count INTEGER := 0;
   v_profiles_reset_count INTEGER := 0;
 BEGIN
-  -- Get the caller's user ID
+  -- Obter o ID do utilizador que chama a função
   v_admin_id := auth.uid();
   
-  -- Check if caller is authenticated
+  -- Verificar se o utilizador está autenticado
   IF v_admin_id IS NULL THEN
     RETURN jsonb_build_object(
       'success', false,
@@ -54,7 +54,7 @@ BEGIN
     );
   END IF;
   
-  -- Check if caller is admin
+  -- Verificar se o utilizador é administrador
   IF NOT EXISTS (
     SELECT 1 FROM public.user_roles 
     WHERE user_id = v_admin_id AND role = 'admin'
@@ -65,41 +65,41 @@ BEGIN
     );
   END IF;
   
-  -- Start cleanup operations (all within this transaction)
+  -- Iniciar operações de limpeza (todas dentro desta transação)
   
-  -- 1. Delete tasks (references campaigns via FK)
+  -- 1. Eliminar tarefas (referenciam campanhas via FK)
   DELETE FROM public.tasks WHERE true;
   GET DIAGNOSTICS v_tasks_count = ROW_COUNT;
   
-  -- 2. Delete campaigns
+  -- 2. Eliminar campanhas
   DELETE FROM public.campaigns WHERE true;
   GET DIAGNOSTICS v_campaigns_count = ROW_COUNT;
   
-  -- 3. Delete withdrawals
+  -- 3. Eliminar levantamentos
   DELETE FROM public.withdrawals WHERE true;
   GET DIAGNOSTICS v_withdrawals_count = ROW_COUNT;
   
-  -- 4. Delete deposits
+  -- 4. Eliminar depósitos
   DELETE FROM public.deposits WHERE true;
   GET DIAGNOSTICS v_deposits_count = ROW_COUNT;
   
-  -- 5. Delete notifications
+  -- 5. Eliminar notificações
   DELETE FROM public.notifications WHERE true;
   GET DIAGNOSTICS v_notifications_count = ROW_COUNT;
   
-  -- 6. Delete blocked_devices
+  -- 6. Eliminar dispositivos bloqueados
   DELETE FROM public.blocked_devices WHERE true;
   GET DIAGNOSTICS v_blocked_devices_count = ROW_COUNT;
   
-  -- 7. Delete chat_messages
+  -- 7. Eliminar mensagens de chat
   DELETE FROM public.chat_messages WHERE true;
   GET DIAGNOSTICS v_chat_messages_count = ROW_COUNT;
   
-  -- 8. Delete chat_moderation
+  -- 8. Eliminar moderação de chat
   DELETE FROM public.chat_moderation WHERE true;
   GET DIAGNOSTICS v_chat_moderation_count = ROW_COUNT;
   
-  -- 9. Delete kyc_documents
+  -- 9. Eliminar documentos KYC
   BEGIN
     DELETE FROM public.kyc_documents WHERE true;
     GET DIAGNOSTICS v_kyc_documents_count = ROW_COUNT;
@@ -107,7 +107,7 @@ BEGIN
     v_kyc_documents_count := 0;
   END;
   
-  -- 10. Delete withdraw_methods
+  -- 10. Eliminar métodos de levantamento
   BEGIN
     DELETE FROM public.withdraw_methods WHERE true;
     GET DIAGNOSTICS v_withdraw_methods_count = ROW_COUNT;
@@ -115,7 +115,7 @@ BEGIN
     v_withdraw_methods_count := 0;
   END;
 
-  -- 11. Delete referral_commissions
+  -- 11. Eliminar comissões de referência
   BEGIN
     DELETE FROM public.referral_commissions WHERE true;
     GET DIAGNOSTICS v_referral_commissions_count = ROW_COUNT;
@@ -123,7 +123,7 @@ BEGIN
     v_referral_commissions_count := 0;
   END;
   
-  -- 12. Reset profiles (balances, access metrics, and referrals)
+  -- 12. Reinicializar perfis (saldos, métricas de acesso e referências)
   UPDATE public.profiles 
   SET 
     wallet_balance = 0, 
@@ -137,10 +137,10 @@ BEGIN
     OR referred_by IS NOT NULL;
   GET DIAGNOSTICS v_profiles_reset_count = ROW_COUNT;
 
-  -- 13. Clear old system logs (except this reset log which will be inserted next)
+  -- 13. Limpar logs antigos do sistema (exceto este log de reset que será inserido a seguir)
   DELETE FROM public.system_logs WHERE true;
   
-  -- Build deleted counts JSON
+  -- Construir JSON de contagens eliminadas
   v_deleted_counts := jsonb_build_object(
     'tasks', v_tasks_count,
     'campaigns', v_campaigns_count,
@@ -156,7 +156,7 @@ BEGIN
     'profiles_reset', v_profiles_reset_count
   );
   
-  -- Log the action
+  -- Registar a ação
   INSERT INTO public.system_logs (admin_id, action, details)
   VALUES (
     v_admin_id,
@@ -181,12 +181,12 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$;
 
--- 3. Grant execute permission to authenticated users (admin check is internal)
+-- 3. Conceder permissão de execução a utilizadores autenticados (verificação de admin é interna)
 GRANT EXECUTE ON FUNCTION public.system_cleanup_v2() TO authenticated;
 
--- 4. Reload schema cache
+-- 4. Recarregar cache do esquema
 NOTIFY pgrst, 'reload schema';
 
 -- ============================================
--- END OF SYSTEM CLEANUP V2 MIGRATION
+-- FIM DA MIGRAÇÃO DE LIMPEZA DO SISTEMA V2
 -- ============================================

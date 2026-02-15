@@ -8,6 +8,7 @@ import CountdownTimer from "../common/CountdownTimer";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import FileUpload from "../common/FileUpload";
+import YouTubeTaskPlayer from "./YouTubeTaskPlayer";
 
 interface TasksListProps {
   user: User;
@@ -22,6 +23,12 @@ interface AvailableCampaign {
   page_link: string;
   profile_link: string | null;
   video_link: string | null;
+  video_id?: string | null;
+  channel_id?: string | null;
+  duration?: number | null;
+  reward?: number | null;
+  total_budget?: number | null;
+  remaining_budget?: number | null;
   target_count: number;
   completed_count: number;
   status: string;
@@ -389,78 +396,93 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                               </div>
 
                               <div className="space-y-4">
-                                <FileUpload
-                                  userId={user.id}
-                                  taskId={task.id}
-                                  proofType="follow"
-                                  label="Print de Confirmação (Seguir)"
-                                  required
-                                  value={proofs.follow}
-                                  onChange={(url) => setProofs({ ...proofs, follow: url })}
-                                />
-
-                                {(campaign?.plan_type === "kwanza" || (campaign?.plan_type !== "ta_no_limao" && campaign?.plan_type !== "limao")) && (
-                                  <div className="grid grid-cols-1 gap-4">
-                                    <FileUpload
-                                      userId={user.id}
-                                      taskId={task.id}
-                                      proofType="like"
-                                      label="Print de Gostar"
-                                      required
-                                      value={proofs.like}
-                                      onChange={(url) => setProofs({ ...proofs, like: url })}
-                                    />
-                                    <FileUpload
-                                      userId={user.id}
-                                      taskId={task.id}
-                                      proofType="comment"
-                                      label="Print de Comentar"
-                                      required
-                                      value={proofs.comment}
-                                      onChange={(url) => setProofs({ ...proofs, comment: url })}
-                                    />
-                                    <FileUpload
-                                      userId={user.id}
-                                      taskId={task.id}
-                                      proofType="share"
-                                      label="Print de Partilhar"
-                                      required
-                                      value={proofs.share}
-                                      onChange={(url) => setProofs({ ...proofs, share: url })}
-                                    />
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="flex items-start space-x-3 p-4 bg-white/5 border border-white/10 rounded-2xl group cursor-pointer hover:bg-white/10 transition-all">
-                                <Checkbox
-                                  id="confirm-account"
-                                  checked={confirmAccount}
-                                  onCheckedChange={(checked) => setConfirmAccount(checked === true)}
-                                  className="mt-1 border-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                                />
-                                <Label
-                                  htmlFor="confirm-account"
-                                  className="text-[10px] font-bold text-muted-foreground leading-relaxed cursor-pointer group-hover:text-white transition-colors"
-                                >
-                                  DECLARO SOB PENA DE BLOQUEIO QUE REALIZEI A TAREFA USANDO A CONTA ACIMA E SEGUINDO TODAS AS DIRETRIZES DA PLATAFORMA.
-                                </Label>
-                              </div>
-
-                              <button
-                                onClick={() => submitProofs(task.id, campaign?.plan_type || "ta_no_limao")}
-                                disabled={uploading || !confirmAccount}
-                                className="btn-primary w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-neon disabled:opacity-30 disabled:cursor-not-allowed group transition-all"
-                              >
-                                {uploading ? (
-                                  <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mx-auto" />
+                                {campaign?.platform === "youtube" && campaign?.video_id ? (
+                                  <YouTubeTaskPlayer
+                                    campaign={campaign}
+                                    taskId={task.id}
+                                    userId={user.id}
+                                    onComplete={() => {
+                                      setSelectedCampaign(null);
+                                      loadData();
+                                      onTaskComplete();
+                                    }}
+                                  />
                                 ) : (
-                                  <span className="flex items-center justify-center gap-2">
-                                    <CheckCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                    Submeter Comprovativos
-                                  </span>
+                                  <>
+                                    <FileUpload
+                                      userId={user.id}
+                                      taskId={task.id}
+                                      proofType="follow"
+                                      label="Print de Confirmação (Seguir)"
+                                      required
+                                      value={proofs.follow}
+                                      onChange={(url) => setProofs({ ...proofs, follow: url })}
+                                    />
+
+                                    {(campaign?.plan_type === "kwanza" || (campaign?.plan_type !== "ta_no_limao" && campaign?.plan_type !== "limao")) && (
+                                      <div className="grid grid-cols-1 gap-4">
+                                        <FileUpload
+                                          userId={user.id}
+                                          taskId={task.id}
+                                          proofType="like"
+                                          label="Print de Gostar"
+                                          required
+                                          value={proofs.like}
+                                          onChange={(url) => setProofs({ ...proofs, like: url })}
+                                        />
+                                        <FileUpload
+                                          userId={user.id}
+                                          taskId={task.id}
+                                          proofType="comment"
+                                          label="Print de Comentar"
+                                          required
+                                          value={proofs.comment}
+                                          onChange={(url) => setProofs({ ...proofs, comment: url })}
+                                        />
+                                        <FileUpload
+                                          userId={user.id}
+                                          taskId={task.id}
+                                          proofType="share"
+                                          label="Print de Partilhar"
+                                          required
+                                          value={proofs.share}
+                                          onChange={(url) => setProofs({ ...proofs, share: url })}
+                                        />
+                                      </div>
+                                    )}
+
+                                    <div className="flex items-start space-x-3 p-4 bg-white/5 border border-white/10 rounded-2xl group cursor-pointer hover:bg-white/10 transition-all">
+                                      <Checkbox
+                                        id="confirm-account"
+                                        checked={confirmAccount}
+                                        onCheckedChange={(checked) => setConfirmAccount(checked === true)}
+                                        className="mt-1 border-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                      />
+                                      <Label
+                                        htmlFor="confirm-account"
+                                        className="text-[10px] font-bold text-muted-foreground leading-relaxed cursor-pointer group-hover:text-white transition-colors"
+                                      >
+                                        DECLARO SOB PENA DE BLOQUEIO QUE REALIZEI A TAREFA USANDO A CONTA ACIMA E SEGUINDO TODAS AS DIRETRIZES DA PLATAFORMA.
+                                      </Label>
+                                    </div>
+
+                                    <button
+                                      onClick={() => submitProofs(task.id, campaign?.plan_type || "ta_no_limao")}
+                                      disabled={uploading || !confirmAccount}
+                                      className="btn-primary w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-neon disabled:opacity-30 disabled:cursor-not-allowed group transition-all"
+                                    >
+                                      {uploading ? (
+                                        <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mx-auto" />
+                                      ) : (
+                                        <span className="flex items-center justify-center gap-2">
+                                          <CheckCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                          Submeter Comprovativos
+                                        </span>
+                                      )}
+                                    </button>
+                                  </>
                                 )}
-                              </button>
+                              </div>
                             </div>
                           </DialogContent>
                         </Dialog>

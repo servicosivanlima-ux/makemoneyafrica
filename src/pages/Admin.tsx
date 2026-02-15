@@ -155,6 +155,10 @@ const Admin = () => {
   };
 
   const loadDashboardData = async () => {
+    let campaignsCount = 0;
+    let tasksCount = 0;
+    let withdrawalsCount = 0;
+    let usersCount = 0;
     try {
       // Load pending payments (campaigns with pending_payment status)
       const { data: campaignsData, error: campaignsError } = await supabase
@@ -176,11 +180,16 @@ const Admin = () => {
           client: clientProfiles?.find(p => p.user_id === campaign.client_id) || null
         }));
         setPendingCampaigns(campaignsWithClients);
+        campaignsCount = campaignsWithClients.length;
       } else if (campaignsError) {
         console.error("Error loading campaigns:", campaignsError);
         toast.error("Erro ao carregar campanhas: " + campaignsError.message);
       }
+    } catch (err: any) {
+      console.error("Critical error loading campaigns:", err);
+    }
 
+    try {
       // Load pending tasks
       const { data: tasksData, error: tasksError } = await supabase
         .from("tasks")
@@ -208,11 +217,16 @@ const Admin = () => {
           worker: workerProfiles?.find(p => p.user_id === task.worker_id) || null
         }));
         setPendingTasks(tasksWithRelations);
+        tasksCount = tasksWithRelations.length;
       } else if (tasksError) {
         console.error("Error loading tasks:", tasksError);
         toast.error("Erro ao carregar tarefas: " + tasksError.message);
       }
+    } catch (err: any) {
+      console.error("Critical error loading tasks:", err);
+    }
 
+    try {
       // Load all users (excluding admins from the general list)
       const { data: usersData, error: usersError } = await supabase
         .from("profiles")
@@ -222,30 +236,51 @@ const Admin = () => {
 
       if (!usersError && usersData) {
         setUsers(usersData);
+        usersCount = usersData.length;
       }
+    } catch (err: any) {
+      console.error("Critical error loading users:", err);
+    }
 
+    try {
       // Load pending withdrawals
+      console.log("Fetching pending withdrawals...");
       const { data: withdrawalsData, error: withdrawalsError } = await supabase
         .from("withdrawals")
         .select("*")
         .eq("status", "pending")
         .order("created_at", { ascending: false });
 
-      if (!withdrawalsError && withdrawalsData) {
+      if (withdrawalsError) {
+        console.error("Error loading withdrawals:", withdrawalsError);
+        toast.error("Erro ao carregar saques: " + withdrawalsError.message);
+      } else if (withdrawalsData) {
+        console.log(`Found ${withdrawalsData.length} pending withdrawals`);
         // Fetch worker profiles separately
         const workerIds = [...new Set(withdrawalsData.map(w => w.worker_id))];
-        const { data: workerProfiles } = await supabase
+
+        const { data: workerProfiles, error: profilesError } = await supabase
           .from("profiles")
           .select("user_id, full_name, email, phone, country, user_type, account_type")
           .in("user_id", workerIds);
+
+        if (profilesError) {
+          console.error("Error loading worker profiles for withdrawals:", profilesError);
+        }
 
         const withdrawalsWithWorkers = withdrawalsData.map(withdrawal => ({
           ...withdrawal,
           worker: workerProfiles?.find(p => p.user_id === withdrawal.worker_id) || null
         }));
         setPendingWithdrawals(withdrawalsWithWorkers);
+        withdrawalsCount = withdrawalsWithWorkers.length;
+        console.log("Withdrawals with workers processed:", withdrawalsWithWorkers);
       }
+    } catch (err: any) {
+      console.error("Critical error loading withdrawals:", err);
+    }
 
+    try {
       // Calculate stats
       const { count: activeCampaignsCount } = await supabase
         .from("campaigns")
@@ -313,19 +348,19 @@ const Admin = () => {
       }
 
       setStats({
-        pendingPayments: campaignsData?.length || 0,
-        pendingTasks: tasksData?.length || 0,
-        pendingWithdrawals: withdrawalsData?.length || 0,
-        totalUsers: usersData?.length || 0,
+        pendingPayments: campaignsCount,
+        pendingTasks: tasksCount,
+        pendingWithdrawals: withdrawalsCount,
+        totalUsers: usersCount,
         activeCampaigns: activeCampaignsCount || 0,
         totalRevenue: Math.max(0, finalRevenue),
         pendingDeposits: pendingDepositsCount || 0,
-        pendingKyc: kycData?.filter((k: any) => k.status === 'pending').length || 0,
+        pendingKyc: (kycData as any[])?.filter((k: any) => k.status === 'pending').length || 0,
         totalReferrals: referralStatsData?.total_referrals || 0,
         totalCommissionsPaid: totalCommissions
       });
-    } catch (error) {
-      console.error("Error loading dashboard data:", error);
+    } catch (err: any) {
+      console.error("Error calculating dashboard stats:", err);
     }
   };
 

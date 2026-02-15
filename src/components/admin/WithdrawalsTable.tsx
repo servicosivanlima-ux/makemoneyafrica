@@ -42,6 +42,10 @@ const WithdrawalsTable = ({ withdrawals, onRefresh }: WithdrawalsTableProps) => 
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [withdrawalToReject, setWithdrawalToReject] = useState<Withdrawal | null>(null);
 
+  useState(() => {
+    console.log("WithdrawalsTable received withdrawals:", withdrawals);
+  });
+
   const handleApprove = async (withdrawal: Withdrawal) => {
     setProcessing(withdrawal.id);
     try {

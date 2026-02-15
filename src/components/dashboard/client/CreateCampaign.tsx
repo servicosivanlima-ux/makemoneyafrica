@@ -173,35 +173,56 @@ const CreateCampaign = ({
     }
   };
 
+  const extractVideoId = (url: string) => {
+    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[7].length === 11) ? match[7] : null;
+  };
+
+  const [videoId, setVideoId] = useState("");
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [customBudget, setCustomBudget] = useState(0);
+  const [rewardPerTask, setRewardPerTask] = useState(0);
+
   const handleFinalSubmit = async () => {
-    if (!planType || !selectedPlan || !platform || !pageLink) {
+    if (!planType || !platform || !pageLink) {
       toast.error("Por favor, preencha todos os campos");
       return;
     }
 
-    if (planType === "kwanza" && !videoLink) {
-      toast.error("Por favor, insira o link da publicação para engajamento");
+    if (planType === "kwanza" && (!videoLink || !selectedPlan)) {
+      toast.error("Por favor, insira o link do vídeo e selecione um plano");
       return;
     }
 
-    if (balance < selectedPlan.price) {
+    const priceToDeduct = selectedPlan?.price || customBudget;
+
+    if (balance < priceToDeduct) {
       toast.error("Saldo insuficiente. Por favor, recarregue a sua carteira.");
       return;
     }
 
     setLoading(true);
     try {
+      const vid = extractVideoId(videoLink);
+
       const {
         data: campaignId,
         error
       } = await supabase.rpc('create_campaign_with_balance' as any, {
         p_plan_type: planType === "limao" ? "ta_no_limao" : "kwanza",
-        p_plan_name: selectedPlan.name,
+        p_plan_name: selectedPlan?.name || "Custom Kwanza",
         p_platform: platform,
         p_page_link: pageLink,
         p_profile_link: profileLink || null,
-        p_video_link: videoLink || null
+        p_video_link: videoLink || null,
+        // New fields for YouTube Kwanza V2
+        p_video_id: vid || null,
+        p_duration: videoDuration || 60, // Default to 60s if not fetched
+        p_reward: rewardPerTask || (planType === "kwanza" ? 200 : 100),
+        p_total_budget: priceToDeduct
       });
+
       if (error) throw error;
 
       toast.success("Campanha activada com sucesso!");
@@ -408,122 +429,199 @@ const CreateCampaign = ({
     </div>}
 
     {/* Step 3: Enter Links */}
-    {step === 3 && <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h2 className="font-display text-2xl font-bold text-foreground mb-2">
-          Links da Página
-        </h2>
-        <p className="text-muted-foreground">
-          Insira os links que os trabalhadores irão aceder
-        </p>
-      </div>
-
-      <div className="space-y-4 max-w-lg mx-auto">
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-2">Link da Página ou Perfil*</label>
-          <input type="url" value={pageLink} onChange={e => setPageLink(e.target.value)} className="input-styled w-full" required placeholder="inserir o link da campanha em https//exemplo.com" />
-          <p className="text-xs text-muted-foreground mt-1">Link principal da página ou perfil para novos seguidores</p>
+    {step === 3 && (
+      <div className="space-y-6">
+        <div className="text-center mb-8">
+          <h2 className="font-display text-2xl font-bold text-foreground mb-2">
+            Links da Página
+          </h2>
+          <p className="text-muted-foreground">
+            Insira os links que os trabalhadores irão aceder
+          </p>
         </div>
 
-        {planType === "kwanza" && (
+        <div className="space-y-6 max-w-lg mx-auto">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Link da Publicação/Post *</label>
-            <input
-              type="url"
-              value={videoLink}
-              onChange={e => setVideoLink(e.target.value)}
-              className="input-styled w-full border-gold/50 focus:border-gold"
-              required
-              placeholder="https//facebook.com/posts/123..."
-            />
-            <p className="text-xs text-muted-foreground mt-1">Link do post específico que os trabalhadores devem Curtir/Comentar/Partilhar</p>
+            <label className="block text-sm font-bold text-foreground mb-2 flex items-center gap-2">
+              <Zap className="w-4 h-4 text-primary" />
+              Link da Página ou Canal (Destino Final)*
+            </label>
+            <input type="url" value={pageLink} onChange={e => setPageLink(e.target.value)} className="input-styled w-full" required placeholder="https://youtube.com/@seucanal" />
+            <p className="text-[10px] text-muted-foreground mt-2 font-medium uppercase tracking-wider">Link onde o utilizador deve se subscrever ou seguir</p>
           </div>
-        )}
+
+          {planType === "kwanza" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="p-6 bg-gold/5 border border-gold/20 rounded-2xl">
+                <label className="block text-sm font-bold text-gold mb-3 flex items-center gap-2">
+                  <Star className="w-4 h-4" />
+                  Configuração de Vídeo YouTube
+                </label>
+                <input
+                  type="url"
+                  value={videoLink}
+                  onChange={e => {
+                    setVideoLink(e.target.value);
+                    const vid = extractVideoId(e.target.value);
+                    if (vid) {
+                      setVideoId(vid);
+                      toast.success("Vídeo identificado!");
+                    }
+                  }}
+                  className="input-styled w-full border-gold/30 focus:border-gold bg-gold/5"
+                  required
+                  placeholder="https://www.youtube.com/watch?v=..."
+                />
+
+                {videoId && (
+                  <div className="mt-4 p-4 bg-black/40 rounded-xl border border-white/5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase text-muted-foreground">ID do Vídeo:</span>
+                      <span className="text-[10px] font-mono text-gold">{videoId}</span>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-muted-foreground">Duração em Segundos:</label>
+                      <input
+                        type="number"
+                        value={videoDuration}
+                        onChange={e => {
+                          const dur = parseInt(e.target.value);
+                          setVideoDuration(dur);
+                          setRewardPerTask(dur); // 1 Kz per second rule
+                        }}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none transition-all"
+                        placeholder="Ex: 120"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                      <span className="text-[10px] font-black uppercase text-muted-foreground">Recompensa (1:1):</span>
+                      <span className="text-sm font-black text-primary">{videoDuration} Kz / tarefa</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6 bg-primary/5 border border-primary/20 rounded-2xl">
+                <label className="block text-sm font-bold text-primary mb-3 flex items-center gap-2">
+                  <Wallet className="w-4 h-4" />
+                  Orçamento da Campanha
+                </label>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-muted-foreground block mb-2">Orçamento Total (Kz):</label>
+                    <input
+                      type="number"
+                      value={customBudget}
+                      onChange={e => {
+                        const budget = parseInt(e.target.value);
+                        setCustomBudget(budget);
+                        if (selectedPlan) setSelectedPlan({ ...selectedPlan, price: budget });
+                      }}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-lg font-bold text-white focus:border-primary outline-none"
+                      placeholder="Ex: 50000"
+                    />
+                  </div>
+                  {videoDuration > 0 && customBudget > 0 && (
+                    <div className="p-3 bg-white/5 rounded-xl border border-white/5 flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase text-muted-foreground">Estimativa:</span>
+                      <span className="text-xs font-bold text-white">
+                        {Math.floor(customBudget / videoDuration)} Tarefas possíveis
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-10 border-t border-white/5">
+          <button onClick={() => setStep(2)} className="btn-secondary w-full sm:w-auto min-w-[160px]">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Mudar Plataforma
+          </button>
+          <button
+            onClick={async () => {
+              // Validation
+              if (!validatePlatformUrl(pageLink, platform as Platform)) {
+                const platformName = PLATFORMS.find(p => p.id === platform)?.name;
+                toast.error(`O link da página não corresponde à plataforma selecionada (${platformName}). Por favor, verifique o link.`);
+                return;
+              }
+
+              if (planType === "kwanza" && videoLink && !validatePlatformUrl(videoLink, platform as Platform)) {
+                const platformName = PLATFORMS.find(p => p.id === platform)?.name;
+                toast.error(`O link da publicação não corresponde à plataforma selecionada (${platformName}). Por favor, verifique o link.`);
+                return;
+              }
+
+              const isNotDuplicate = await checkDuplicateLink();
+              if (isNotDuplicate) setStep(4);
+            }}
+            disabled={!pageLink || (selectedPlan && balance < selectedPlan.price)}
+            className="btn-primary w-full sm:w-auto min-w-[200px]"
+          >
+            Revisar Campanha
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </button>
+        </div>
       </div>
-
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-10 border-t border-white/5">
-        <button onClick={() => setStep(2)} className="btn-secondary w-full sm:w-auto min-w-[160px]">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Mudar Plataforma
-        </button>
-        <button
-          onClick={async () => {
-            // Validation
-            if (!validatePlatformUrl(pageLink, platform as Platform)) {
-              const platformName = PLATFORMS.find(p => p.id === platform)?.name;
-              toast.error(`O link da página não corresponde à plataforma selecionada (${platformName}). Por favor, verifique o link.`);
-              return;
-            }
-
-            if (planType === "kwanza" && videoLink && !validatePlatformUrl(videoLink, platform as Platform)) {
-              const platformName = PLATFORMS.find(p => p.id === platform)?.name;
-              toast.error(`O link da publicação não corresponde à plataforma selecionada (${platformName}). Por favor, verifique o link.`);
-              return;
-            }
-
-            const isNotDuplicate = await checkDuplicateLink();
-            if (isNotDuplicate) setStep(4);
-          }}
-          disabled={!pageLink || (selectedPlan && balance < selectedPlan.price)}
-          className="btn-primary w-full sm:w-auto min-w-[200px]"
-        >
-          Revisar Campanha
-          <ArrowRight className="w-4 h-4 ml-2" />
-        </button>
-      </div>
-    </div>}
+    )}
 
     {/* Step 4: Final Confirmation */}
-    {step === 4 && <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h2 className="font-display text-2xl font-bold text-foreground mb-2">
-          Confirmar Ativação
-        </h2>
-        <p className="text-muted-foreground">
-          A sua campanha será activada instantaneamente após a confirmação
-        </p>
-      </div>
+    {step === 4 && (
+      <div className="space-y-6">
+        <div className="text-center mb-8">
+          <h2 className="font-display text-2xl font-bold text-foreground mb-2">
+            Confirmar Ativação
+          </h2>
+          <p className="text-muted-foreground">
+            A sua campanha será activada instantaneamente após a confirmação
+          </p>
+        </div>
 
-      <div className="card-elevated p-6 max-w-lg mx-auto space-y-4">
-        <div className="flex justify-between items-center pb-4 border-b border-border">
-          <span className="text-muted-foreground">Plano</span>
-          <span className="font-bold">{planType === "limao" ? "Tá no Limão" : "Kwanza"} - {selectedPlan?.name}</span>
-        </div>
-        <div className="flex justify-between items-center pb-4 border-b border-border">
-          <span className="text-muted-foreground">Plataforma</span>
-          <span className="font-bold capitalize">{platform}</span>
-        </div>
-        <div className="flex justify-between items-center pb-4 border-b border-border">
-          <span className="text-muted-foreground">Custo</span>
-          <span className="font-bold text-gradient-gold">{formatPrice(selectedPlan?.price || 0)}</span>
-        </div>
-        {planType === "kwanza" && (
+        <div className="card-elevated p-6 max-w-lg mx-auto space-y-4">
           <div className="flex justify-between items-center pb-4 border-b border-border">
-            <span className="text-muted-foreground">Link do Post</span>
-            <span className="font-bold text-xs truncate max-w-[200px]">{videoLink}</span>
+            <span className="text-muted-foreground">Plano</span>
+            <span className="font-bold">{planType === "limao" ? "Tá no Limão" : "Kwanza"} - {selectedPlan?.name}</span>
           </div>
-        )}
-        <div className="flex justify-between items-center pt-2">
-          <span className="text-muted-foreground">Saldo após activação</span>
-          <span className="font-bold text-primary">{formatPrice(balance - (selectedPlan?.price || 0))}</span>
+          <div className="flex justify-between items-center pb-4 border-b border-border">
+            <span className="text-muted-foreground">Plataforma</span>
+            <span className="font-bold capitalize">{platform}</span>
+          </div>
+          <div className="flex justify-between items-center pb-4 border-b border-border">
+            <span className="text-muted-foreground">Custo</span>
+            <span className="font-bold text-gradient-gold">{formatPrice(selectedPlan?.price || 0)}</span>
+          </div>
+          {planType === "kwanza" && (
+            <div className="flex justify-between items-center pb-4 border-b border-border">
+              <span className="text-muted-foreground">Link do Post</span>
+              <span className="font-bold text-xs truncate max-w-[200px]">{videoLink}</span>
+            </div>
+          )}
+          <div className="flex justify-between items-center pt-2">
+            <span className="text-muted-foreground">Saldo após activação</span>
+            <span className="font-bold text-primary">{formatPrice(balance - (selectedPlan?.price || 0))}</span>
+          </div>
+
+          <button
+            onClick={handleFinalSubmit}
+            disabled={loading}
+            className="w-full btn-primary h-14 mt-6 rounded-2xl font-black uppercase tracking-widest text-xs"
+          >
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Confirmar e Activar Agora"}
+          </button>
         </div>
 
-        <button
-          onClick={handleFinalSubmit}
-          disabled={loading}
-          className="w-full btn-primary h-14 mt-6 rounded-2xl font-black uppercase tracking-widest text-xs"
-        >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Confirmar e Activar Agora"}
-        </button>
+        <div className="flex justify-center pt-8 border-t border-white/5">
+          <button onClick={() => setStep(3)} className="btn-secondary min-w-[200px]">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar para Links
+          </button>
+        </div>
       </div>
-
-      <div className="flex justify-center pt-8 border-t border-white/5">
-        <button onClick={() => setStep(3)} className="btn-secondary min-w-[200px]">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar para Links
-        </button>
-      </div>
-    </div>}
+    )}
   </div>;
 };
+
 export default CreateCampaign;
