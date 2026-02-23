@@ -4,53 +4,67 @@ import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Check, Zap, Star, Youtube, MessageCircle, Clock, AlertTriangle, Copy, Upload, Loader2, Wallet } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import FileUpload from "../common/FileUpload";
+import { formatPrice as displayPrice } from "@/lib/currency-utils";
+
 interface CreateCampaignProps {
   user: User;
   onComplete: () => void;
   onBack: () => void;
   onRecharge?: () => void;
 }
+
 type PlanType = "limao" | "kwanza";
 type Platform = "facebook" | "instagram" | "tiktok" | "youtube";
 type PaymentMethod = "iban" | "multicaixa";
+
 interface PlanOption {
   name: string;
   count: number;
   price: number;
+  reward?: number;
   popular?: boolean;
   premium?: boolean;
 }
+
 const LIMAO_PLANS: PlanOption[] = [{
   name: "Básico",
   count: 30,
-  price: 6000
+  price: 6000,
+  reward: 60
 }, {
   name: "Super Básico",
   count: 50,
-  price: 8000
+  price: 8000,
+  reward: 48
 }, {
   name: "Tá Fixe",
   count: 100,
   price: 15000,
+  reward: 45,
   popular: true
 }, {
   name: "Bronze",
   count: 200,
-  price: 27000
+  price: 27000,
+  reward: 40.5
 }, {
   name: "Prata",
   count: 500,
-  price: 75000
+  price: 75000,
+  reward: 45
 }, {
   name: "Ouro",
   count: 1000,
-  price: 125000
+  price: 125000,
+  reward: 37.5
 }, {
   name: "Premium",
   count: 3500,
   price: 400000,
+  reward: 34,
   premium: true
 }];
+
 const KWANZA_PLANS: PlanOption[] = [{
   name: "Básico",
   count: 50,
@@ -82,6 +96,7 @@ const KWANZA_PLANS: PlanOption[] = [{
   price: 850000,
   premium: true
 }];
+
 const PLATFORMS: {
   id: Platform;
   name: string;
@@ -103,6 +118,7 @@ const PLATFORMS: {
   name: "YouTube",
   icon: "🎬"
 }];
+
 const CreateCampaign = ({
   user,
   onComplete,
@@ -112,32 +128,40 @@ const CreateCampaign = ({
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [balance, setBalance] = useState(0);
+  const [userCountry, setUserCountry] = useState("AO");
 
   useEffect(() => {
     (supabase
       .from("profiles")
-      .select("wallet_balance")
+      .select("wallet_balance, country")
       .eq("user_id", user.id)
       .single() as any)
-      .then(({ data }: any) => setBalance(data?.wallet_balance || 0));
+      .then(({ data }: any) => {
+        setBalance(data?.wallet_balance || 0);
+        setUserCountry(data?.country || "AO");
+      });
   }, [user.id]);
-  const [planType, setPlanType] = useState<PlanType | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState<PlanOption | null>(null); // Changed Plan to PlanOption
-  const [platform, setPlatform] = useState<Platform | "">(""); // Changed Platform | null to Platform | ""
+
+  const [planType, setPlanType] = useState<PlanType | null>("limao");
+  const [selectedPlan, setSelectedPlan] = useState<PlanOption | null>(null);
+  const [platform, setPlatform] = useState<Platform | "">("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("iban");
   const [paymentProofUrl, setPaymentProofUrl] = useState("");
   const [pageLink, setPageLink] = useState("");
   const [profileLink, setProfileLink] = useState("");
   const [videoLink, setVideoLink] = useState("");
+
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("pt-AO").format(price) + " Kz";
+    return displayPrice(price, userCountry);
   };
+
   const getDeadline = (count: number) => {
     if (count <= 200) return "1 Semana";
     if (count <= 500) return "2 Semanas";
     if (count <= 1500) return "3 Semanas";
     return "4 Semanas";
   };
+
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copiado!`);
@@ -209,18 +233,17 @@ const CreateCampaign = ({
       const {
         data: campaignId,
         error
-      } = await supabase.rpc('create_campaign_with_balance' as any, {
+      } = await supabase.rpc('create_campaign_with_balance_v3' as any, {
         p_plan_type: planType === "limao" ? "ta_no_limao" : "kwanza",
         p_plan_name: selectedPlan?.name || "Custom Kwanza",
         p_platform: platform,
         p_page_link: pageLink,
         p_profile_link: profileLink || null,
         p_video_link: videoLink || null,
-        // New fields for YouTube Kwanza V2
         p_video_id: vid || null,
-        p_duration: videoDuration || 60, // Default to 60s if not fetched
-        p_reward: rewardPerTask || (planType === "kwanza" ? 200 : 100),
-        p_total_budget: priceToDeduct
+        p_duration: String(videoDuration || 60),
+        p_reward: String(rewardPerTask || selectedPlan?.reward || (planType === "kwanza" ? 200 : 100)),
+        p_total_budget: String(priceToDeduct)
       });
 
       if (error) throw error;
@@ -241,10 +264,13 @@ const CreateCampaign = ({
   };
 
   const getPaymentInstructions = () => {
+    if (userCountry !== "AO") {
+      return `💳 Método de Pagamento: PayPal\n📧 Email: ivan.luanda19@gmail.com\n👤 Nome: Ivan Lima\n\n⚠️ Envie o comprovativo via WhatsApp após o pagamento.`;
+    }
     if (paymentMethod === "iban") {
       return `💳 Método de Pagamento: Por IBAN\n🏦 Bancos:\n- BFA: 0006.0000.5639.8986.3012.6\n- BIC: 0051.0000.2346.1271.10.13.1\n- SOL: 0044.0000.4275.0148.1018.5\n👤 Titular: Ivan Geraldo Manuel Lima`;
     }
-    return `📱 Método de Pagamento: Multicaixa Express\n📞 Número: 923 066 682\n👤 Nome: MakeMoneyWithLima`; // Modified multicaixa instruction
+    return `📱 Método de Pagamento: Multicaixa Express\n📞 Número: 923 066 682\n👤 Nome: MakeMoneyWithLima`;
   };
 
   const whatsappNumber = "244923066682";
@@ -259,6 +285,7 @@ const CreateCampaign = ({
     `${getPaymentInstructions()}\n\n` +
     `📎 Comprovativo enviado no sistema.`
   );
+
   const validatePlatformUrl = (url: string, platform: Platform): boolean => {
     if (!url) return false;
     const lowerUrl = url.toLowerCase();
@@ -285,7 +312,6 @@ const CreateCampaign = ({
       <span className="text-lg font-black font-display text-primary">{formatPrice(balance)}</span>
     </div>
 
-    {/* Progress Steps */}
     <div className="flex items-center justify-between mb-8">
       {[1, 2, 3, 4].map((s, idx) => <div key={s} className="flex items-center">
         <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold transition-all text-sm sm:text-base ${step === s ? "bg-primary text-primary-foreground" : step > s ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
@@ -295,7 +321,6 @@ const CreateCampaign = ({
       </div>)}
     </div>
 
-    {/* Step 1: Choose Plan Type */}
     {step === 1 && <div className="space-y-6">
       <div className="text-center mb-8">
         <h2 className="font-display text-2xl font-bold text-foreground mb-2">
@@ -324,22 +349,11 @@ const CreateCampaign = ({
           </p>
         </button>
 
-        <button onClick={() => setPlanType("kwanza")} className={`p-6 rounded-xl border-2 transition-all text-left ${planType === "kwanza" ? "border-red-500 bg-red-500/10" : "border-border hover:border-red-500/50"}`}>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center">
-              <Youtube className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h3 className="font-display font-bold text-lg text-foreground">
-                Kwanza
-              </h3>
-              <p className="text-sm text-red-500 font-bold">Promoção YouTube V2</p>
-            </div>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Visualização Monitorada + Engajamento (Subs + Like). Máxima retenção garantida.
-          </p>
-        </button>
+        {/* Plano Kwanza ocultado a pedido do utilizador */}
+        <div className="p-6 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center opacity-40 grayscale pointer-events-none">
+          <Youtube className="w-8 h-8 mb-2 text-muted-foreground" />
+          <p className="text-xs font-bold uppercase text-muted-foreground tracking-tighter">Indisponível</p>
+        </div>
       </div>
 
       {planType && <div className="mt-8">
@@ -393,7 +407,6 @@ const CreateCampaign = ({
       )}
     </div>}
 
-    {/* Step 2: Choose Platform */}
     {step === 2 && <div className="space-y-6">
       <div className="text-center mb-8">
         <h2 className="font-display text-2xl font-bold text-foreground mb-2">
@@ -425,7 +438,6 @@ const CreateCampaign = ({
       </div>
     </div>}
 
-    {/* Step 3: Enter Links */}
     {step === 3 && (
       <div className="space-y-6">
         <div className="text-center mb-8">
@@ -484,7 +496,7 @@ const CreateCampaign = ({
                         onChange={e => {
                           const dur = parseInt(e.target.value);
                           setVideoDuration(dur);
-                          setRewardPerTask(dur); // 1 Kz per second rule
+                          setRewardPerTask(dur);
                         }}
                         className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none transition-all"
                         placeholder="Ex: 120"
@@ -539,7 +551,6 @@ const CreateCampaign = ({
           </button>
           <button
             onClick={async () => {
-              // Validation
               if (!validatePlatformUrl(pageLink, platform as Platform)) {
                 const platformName = PLATFORMS.find(p => p.id === platform)?.name;
                 toast.error(`O link da página não corresponde à plataforma selecionada (${platformName}). Por favor, verifique o link.`);
@@ -565,7 +576,6 @@ const CreateCampaign = ({
       </div>
     )}
 
-    {/* Step 4: Final Confirmation */}
     {step === 4 && (
       <div className="space-y-6">
         <div className="text-center mb-8">

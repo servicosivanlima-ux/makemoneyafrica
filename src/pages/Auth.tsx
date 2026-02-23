@@ -249,8 +249,8 @@ const Auth = () => {
           const { data: validationResult, error: validationError } = await (supabase.rpc as any)("validate_referrer", { p_email: trimmedReferrer });
 
           if (validationError) {
-            console.error("Erro na validação do indicador:", validationError);
-            toast.error("O seu indicador ainda não é um trabalhador.");
+            console.error("Erro técnico na validação do indicador:", validationError);
+            toast.error("Erro ao validar o indicador. Por favor, tente novamente mais tarde.");
             setLoading(false);
             return;
           }
@@ -433,7 +433,7 @@ const Auth = () => {
           className="card-premium-glow p-8 md:p-10 relative overflow-hidden"
         >
           {loading && (
-            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-md">
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/90 backdrop-blur-md">
               {isCheckingEmail ? (
                 <div className="w-64 space-y-4">
                   <div className="flex justify-between text-xs font-black uppercase tracking-widest text-primary">
@@ -573,7 +573,7 @@ const Auth = () => {
                     type="text"
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-center text-4xl tracking-[0.5em] font-black focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all outline-none"
+                    className="w-full bg-card/40 border border-border rounded-2xl p-6 text-center text-4xl tracking-[0.5em] font-black focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all outline-none"
                     placeholder="000000"
                     maxLength={6}
                     required
@@ -634,7 +634,7 @@ const Auth = () => {
                     <button
                       type="button"
                       onClick={() => setUserType("client")}
-                      className={`p-5 rounded-2xl border transition-all flex flex-col items-center gap-3 ${userType === "client" ? "glass-card-lime border-primary/50 shadow-neon" : "bg-white/5 border-white/5 hover:border-white/20"
+                      className={`p-5 rounded-2xl border transition-all flex flex-col items-center gap-3 ${userType === "client" ? "glass-card-lime border-primary/50 shadow-neon" : "bg-card/40 border-border hover:border-primary/20"
                         }`}
                     >
                       <Briefcase className={`w-6 h-6 ${userType === "client" ? "text-primary" : "text-muted-foreground"}`} />
@@ -643,7 +643,7 @@ const Auth = () => {
                     <button
                       type="button"
                       onClick={() => setUserType("worker")}
-                      className={`p-5 rounded-2xl border transition-all flex flex-col items-center gap-3 ${userType === "worker" ? "glass-card-gold border-gold/50 shadow-gold-premium" : "bg-white/5 border-white/5 hover:border-white/20"
+                      className={`p-5 rounded-2xl border transition-all flex flex-col items-center gap-3 ${userType === "worker" ? "glass-card-gold border-gold/50 shadow-gold-premium" : "bg-card/40 border-border hover:border-gold/20"
                         }`}
                     >
                       <Wallet className={`w-6 h-6 ${userType === "worker" ? "text-gold" : "text-muted-foreground"}`} />
@@ -672,10 +672,10 @@ const Auth = () => {
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Tipo de Conta</label>
                         <div className="grid grid-cols-2 gap-3">
-                          <button type="button" onClick={() => setAccountType("personal")} className={`py-4 rounded-xl border text-[10px] font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-2 ${accountType === "personal" ? "bg-primary/20 border-primary text-primary shadow-[0_0_15px_-3px_rgba(var(--primary-rgb),0.3)]" : "bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10"}`}>
+                          <button type="button" onClick={() => setAccountType("personal")} className={`py-4 rounded-xl border text-[10px] font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-2 ${accountType === "personal" ? "bg-primary/20 border-primary text-primary shadow-[0_0_15px_-3px_rgba(var(--primary-rgb),0.3)]" : "bg-card/40 border-border text-muted-foreground hover:bg-card/60"}`}>
                             Pessoal
                           </button>
-                          <button type="button" onClick={() => setAccountType("company")} className={`py-4 rounded-xl border text-[10px] font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-2 ${accountType === "company" ? "bg-primary/20 border-primary text-primary shadow-[0_0_15px_-3px_rgba(var(--primary-rgb),0.3)]" : "bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10"}`}>
+                          <button type="button" onClick={() => setAccountType("company")} className={`py-4 rounded-xl border text-[10px] font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-2 ${accountType === "company" ? "bg-primary/20 border-primary text-primary shadow-[0_0_15px_-3px_rgba(var(--primary-rgb),0.3)]" : "bg-card/40 border-border text-muted-foreground hover:bg-card/60"}`}>
                             Empresa
                           </button>
                         </div>

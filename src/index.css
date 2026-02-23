@@ -44,12 +44,49 @@
     --ring: 84 100% 59%;
 
     --radius: 1rem;
+
+    /* Theme-aware utilities */
+    --glass-background: 17 17 19;
+    --glass-border: 255 255 255;
+    --glass-opacity: 0.8;
+  }
+
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    --primary: 84 100% 45%;
+    /* Slightly darker for better contrast on white */
+    --primary-foreground: 240 10% 3.9%;
+
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 84 100% 45%;
+
+    --glass-background: 255 255 255;
+    --glass-border: 0 0 0;
+    --glass-opacity: 0.7;
   }
 }
 
 @layer base {
   * {
-    @apply border-border selection:bg-primary/30 selection:text-white;
+    @apply border-border selection:bg-primary/30 selection:text-foreground;
   }
 
   body {
@@ -72,37 +109,44 @@
 
 @layer utilities {
   .glass-card {
-    background: rgba(17, 17, 19, 0.8);
+    background: rgba(var(--glass-background), var(--glass-opacity));
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(var(--glass-border), 0.12);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
   }
 
   .glass-card-lime {
-    background: rgba(132, 255, 46, 0.05);
+    background: hsla(var(--primary), 0.05);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(132, 255, 46, 0.15);
+    border: 1px solid hsla(var(--primary), 0.15);
   }
 
   .glass-card-gold {
-    background: rgba(255, 204, 0, 0.05);
+    background: hsla(var(--gold), 0.05);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 204, 0, 0.15);
+    border: 1px solid hsla(var(--gold), 0.15);
   }
 
   .text-gradient-neon {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-green-400 to-lime-300;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-green-500 to-lime-400;
   }
 
   .text-gradient-gold-flare {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-600;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-yellow-600 via-amber-500 to-yellow-700;
   }
 
   .bg-mesh-gradient {
     background-image:
-      radial-gradient(at 0% 0%, hsla(84, 100%, 59%, 0.15) 0, transparent 50%),
-      radial-gradient(at 50% 0%, hsla(240, 100%, 50%, 0.1) 0, transparent 50%),
-      radial-gradient(at 100% 0%, hsla(48, 100%, 50%, 0.1) 0, transparent 50%);
+      radial-gradient(at 0% 0%, hsla(var(--primary), 0.15) 0, transparent 50%),
+      radial-gradient(at 50% 0%, hsla(var(--secondary), 0.1) 0, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(var(--gold), 0.1) 0, transparent 50%);
+  }
+
+  .light .bg-mesh-gradient {
+    background-image:
+      radial-gradient(at 0% 0%, hsla(var(--primary), 0.08) 0, transparent 50%),
+      radial-gradient(at 50% 0%, hsla(var(--secondary), 0.05) 0, transparent 50%);
+    background-color: white;
   }
 
   .shadow-neon {
@@ -110,7 +154,7 @@
   }
 
   .shadow-gold-premium {
-    box-shadow: 0 0 35px -5px hsl(48 100% 50% / 0.25);
+    box-shadow: 0 0 35px -5px hsl(var(--gold) / 0.25);
   }
 
   .animate-float {
@@ -134,7 +178,7 @@
   }
 
   .bg-gradient-lime {
-    @apply bg-gradient-to-br from-primary via-green-400 to-lime-300;
+    @apply bg-gradient-to-br from-primary via-green-500 to-lime-400;
   }
 
   .bg-gradient-dark {
@@ -148,7 +192,7 @@
   }
 
   .btn-outline-premium {
-    @apply border border-white/10 bg-white/5 backdrop-blur-md text-foreground font-semibold px-8 py-4 rounded-full transition-all duration-300 hover:bg-white/10 hover:border-primary/50 hover:text-primary active:scale-95;
+    @apply border border-border bg-card/40 backdrop-blur-md text-foreground font-semibold px-8 py-4 rounded-full transition-all duration-300 hover:bg-card/60 hover:border-primary/50 hover:text-primary active:scale-95;
   }
 
   .btn-primary {
@@ -156,7 +200,7 @@
   }
 
   .btn-secondary {
-    @apply border border-white/10 bg-white/5 backdrop-blur-md text-foreground font-black uppercase tracking-widest text-[11px] px-8 py-4 rounded-xl transition-all duration-300 hover:bg-white/10 hover:border-primary/50 hover:text-primary active:scale-95 disabled:opacity-50 flex items-center justify-center;
+    @apply border border-border bg-card/40 backdrop-blur-md text-foreground font-black uppercase tracking-widest text-[11px] px-8 py-4 rounded-xl transition-all duration-300 hover:bg-card/60 hover:border-primary/50 hover:text-primary active:scale-95 disabled:opacity-50 flex items-center justify-center;
   }
 
   .btn-gold {
@@ -185,6 +229,25 @@
   }
 
   .input-premium {
-    @apply w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all duration-300;
+    @apply w-full bg-card/40 border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all duration-300;
+  }
+
+  select.input-premium {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2384cc16' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+  }
+
+  select.input-premium option {
+    background-color: #0a0a0b;
+    color: #84cc16;
+    padding: 8px 12px;
+  }
+
+  select.input-premium option:checked {
+    background-color: #1a1a1c;
+    color: #a3e635;
   }
 }

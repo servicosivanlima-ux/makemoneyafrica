@@ -18,7 +18,7 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? "py-3 glass-card border-b border-white/10" : "py-5 bg-transparent"
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? "py-3 glass-card border-b border-border" : "py-5 bg-transparent"
         }`}
     >
       <div className="container-app">
@@ -75,7 +75,7 @@ const Navbar = () => {
             <ThemeToggle />
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="p-2 rounded-xl glass-card border-white/10 transition-all active:scale-90"
+              className="p-2 rounded-xl glass-card border-border transition-all active:scale-90"
             >
               {isOpen ? <X className="w-6 h-6 text-primary" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -89,38 +89,38 @@ const Navbar = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden overflow-hidden bg-background/95 backdrop-blur-xl border-t border-white/5 mt-4 rounded-2xl"
+              className="lg:hidden overflow-hidden bg-background/95 backdrop-blur-xl border-t border-border mt-4 rounded-2xl"
             >
               <div className="py-6 flex flex-col gap-4 px-2">
                 <a
                   href="#planos"
                   onClick={() => setIsOpen(false)}
-                  className="px-4 py-3 text-lg font-medium hover:bg-white/5 rounded-xl transition-colors"
+                  className="px-4 py-3 text-lg font-medium hover:bg-card/60 rounded-xl transition-colors"
                 >
                   Planos
                 </a>
                 <a
                   href="#simulador"
                   onClick={() => setIsOpen(false)}
-                  className="px-4 py-3 text-lg font-medium hover:bg-white/5 rounded-xl transition-colors"
+                  className="px-4 py-3 text-lg font-medium hover:bg-card/60 rounded-xl transition-colors"
                 >
                   Simulador
                 </a>
                 <Link
                   to="/auth?type=client"
                   onClick={() => setIsOpen(false)}
-                  className="px-4 py-3 text-lg font-medium hover:bg-white/5 rounded-xl transition-colors"
+                  className="px-4 py-3 text-lg font-medium hover:bg-card/60 rounded-xl transition-colors"
                 >
                   Quero ser cliente
                 </Link>
                 <Link
                   to="/auth?type=worker"
                   onClick={() => setIsOpen(false)}
-                  className="px-4 py-3 text-lg font-medium hover:bg-white/5 rounded-xl transition-colors"
+                  className="px-4 py-3 text-lg font-medium hover:bg-card/60 rounded-xl transition-colors"
                 >
                   Quero ser trabalhador
                 </Link>
-                <div className="flex flex-col gap-3 pt-4 border-t border-white/5 mt-2">
+                <div className="flex flex-col gap-3 pt-4 border-t border-border mt-2">
                   <Link to="/auth" className="btn-outline-premium text-center">
                     Entrar
                   </Link>

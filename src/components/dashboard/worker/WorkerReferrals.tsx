@@ -26,6 +26,7 @@ const WorkerReferrals = ({ user }: { user: any }) => {
         total_commissions_paid: 0,
         total_referrals: 0,
     });
+    const [referredUsers, setReferredUsers] = useState<any[]>([]);
     const [copied, setCopied] = useState(false);
 
     useEffect(() => {
@@ -37,13 +38,13 @@ const WorkerReferrals = ({ user }: { user: any }) => {
     const loadReferralData = async () => {
         setLoading(true);
         try {
-            // Load stats for current worker
-            const { data: statsData, error: statsError } = await supabase.rpc("get_referral_stats");
+            // Load stats for current worker (using the new accessible RPC)
+            const { data: statsData, error: statsError } = await (supabase.rpc("get_worker_referral_stats") as any);
             if (statsError) throw statsError;
-            setStats(statsData || { total_commissions_paid: 0, total_referrals: 0 });
+            setStats((statsData as any) || { total_commissions_paid: 0, total_referrals: 0 });
 
             // Load commissions
-            const { data: commsData, error: commsError } = await (supabase
+            const { data: commsData, error: commsError } = await ((supabase as any)
                 .from("referral_commissions")
                 .select(`
                     *,
@@ -54,6 +55,17 @@ const WorkerReferrals = ({ user }: { user: any }) => {
 
             if (commsError) throw commsError;
             setCommissions(commsData || []);
+
+            // Load all referred users (even those without commissions yet)
+            const { data: profilesData, error: profilesError } = await supabase
+                .from("profiles")
+                .select("id, full_name, email, created_at")
+                .eq("referred_by", user.id)
+                .order("created_at", { ascending: false });
+
+            if (!profilesError) {
+                setReferredUsers(profilesData || []);
+            }
 
         } catch (error: any) {
             console.error("Error loading referral data:", error);
@@ -195,6 +207,45 @@ const WorkerReferrals = ({ user }: { user: any }) => {
                             )}
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            {/* All Referrals Section */}
+            <div className="card-elevated overflow-hidden border-white/5">
+                <div className="p-6 border-b border-white/5 bg-white/5 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-primary" />
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Amigos que usaram o teu link</h3>
+                </div>
+                <div className="p-6">
+                    {referredUsers.length === 0 ? (
+                        <p className="text-center text-muted-foreground text-sm py-4">Nenhum amigo registado ainda.</p>
+                    ) : (
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {referredUsers.map((ref) => (
+                                <div key={ref.id} className="bg-white/5 border border-white/10 p-4 rounded-xl space-y-2">
+                                    <div className="font-bold text-white text-sm truncate">
+                                        {ref.full_name?.split(' ')[0]}*** {ref.full_name?.split(' ').slice(-1)}
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground uppercase truncate">
+                                        {ref.email?.split('@')[0].slice(0, 3)}***@{ref.email?.split('@')[1]}
+                                    </div>
+                                    <div className="text-[9px] text-primary/70 font-bold uppercase tracking-tighter">
+                                        Registado em {new Date(ref.created_at).toLocaleDateString("pt-AO")}
+                                    </div>
+                                    {/* Link showing if they have already generated commission or not */}
+                                    {commissions.some(c => c.client?.email === ref.email) ? (
+                                        <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[8px] font-black uppercase">
+                                            Comissão Gerada
+                                        </Badge>
+                                    ) : (
+                                        <Badge variant="outline" className="text-[8px] font-black uppercase text-muted-foreground border-white/10">
+                                            Aguardando Depósito
+                                        </Badge>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

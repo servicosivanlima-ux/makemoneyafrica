@@ -172,7 +172,7 @@ const Admin = () => {
         const clientIds = [...new Set(campaignsData.map(c => c.client_id))];
         const { data: clientProfiles } = await supabase
           .from("profiles")
-          .select("user_id, full_name, email, phone")
+          .select("user_id, full_name, email, phone, country")
           .in("user_id", clientIds);
 
         const campaignsWithClients = campaignsData.map(campaign => ({
@@ -208,7 +208,7 @@ const Admin = () => {
           .in("id", campaignIds);
 
         const { data: workerProfiles } = workerIds.length > 0
-          ? await supabase.from("profiles").select("user_id, full_name, email").in("user_id", workerIds)
+          ? await supabase.from("profiles").select("user_id, full_name, email, country").in("user_id", workerIds)
           : { data: [] };
 
         const tasksWithRelations = tasksData.map(task => ({

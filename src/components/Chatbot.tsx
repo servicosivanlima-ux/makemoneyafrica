@@ -49,7 +49,7 @@ const KNOWLEDGE_BASE = [
         intent: "CLIENTE",
         keywords: ["anunciar", "divulgar", "campanha", "impulsionar", "planos", "preços"],
         response:
-            "📢 Como *Cliente*, você pode divulgar redes sociais e negócios.\n\nPlanos:\n🔹 **Tá no Limão** (desde 6.000 Kz)\n🔸 **Kwanza** (desde 30.000 Kz)\n\nCrie sua campanha agora no portal!"
+            "📢 Como *Cliente*, você pode divulgar redes sociais e negócios.\n\nPlanos:\n🔹 **Tá no Limão** (desde 6.000 Kz)\n\nCrie sua campanha agora no portal!"
     },
     {
         intent: "SUPORTE",

@@ -1,16 +1,16 @@
 import { Wallet, Clock, CheckCircle, TrendingUp } from "lucide-react";
+import { formatPrice } from "@/lib/currency-utils";
 
 interface WorkerStatsProps {
   balance: number;
   availableTasks: number;
   completedTasks: number;
   totalEarned: number;
+  country?: string;
 }
 
-const WorkerStats = ({ balance, availableTasks, completedTasks, totalEarned }: WorkerStatsProps) => {
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("pt-AO").format(price) + " Kz";
-  };
+const WorkerStats = ({ balance, availableTasks, completedTasks, totalEarned, country }: WorkerStatsProps) => {
+  const displayPrice = (price: number) => formatPrice(price, country);
 
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
@@ -22,7 +22,7 @@ const WorkerStats = ({ balance, availableTasks, completedTasks, totalEarned }: W
           </div>
           <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Saldo Disponível</h3>
         </div>
-        <p className="text-4xl font-black font-display text-white">{formatPrice(balance)}</p>
+        <p className="text-4xl font-black font-display text-foreground">{displayPrice(balance)}</p>
         <p className="text-[10px] font-black uppercase tracking-widest text-gold mt-2">Pronto para Levantamento</p>
       </div>
 
@@ -34,7 +34,7 @@ const WorkerStats = ({ balance, availableTasks, completedTasks, totalEarned }: W
           </div>
           <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Disponíveis</h3>
         </div>
-        <p className="text-4xl font-black font-display text-white">{availableTasks}</p>
+        <p className="text-4xl font-black font-display text-foreground">{availableTasks}</p>
         <p className="text-[10px] font-black uppercase tracking-widest text-primary mt-2">Novas Oportunidades</p>
       </div>
 
@@ -46,7 +46,7 @@ const WorkerStats = ({ balance, availableTasks, completedTasks, totalEarned }: W
           </div>
           <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Concluídas</h3>
         </div>
-        <p className="text-4xl font-black font-display text-white">{completedTasks}</p>
+        <p className="text-4xl font-black font-display text-foreground">{completedTasks}</p>
         <p className="text-[10px] font-black uppercase tracking-widest text-primary mt-2">Trabalhos Realizados</p>
       </div>
 
@@ -58,7 +58,7 @@ const WorkerStats = ({ balance, availableTasks, completedTasks, totalEarned }: W
           </div>
           <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Total Ganho</h3>
         </div>
-        <p className="text-4xl font-black font-display text-white">{formatPrice(totalEarned)}</p>
+        <p className="text-4xl font-black font-display text-foreground">{displayPrice(totalEarned)}</p>
         <p className="text-[10px] font-black uppercase tracking-widest text-primary mt-2">Carreira MMWL</p>
       </div>
     </div>

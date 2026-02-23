@@ -1,6 +1,7 @@
 import Footer from "@/components/landing/Footer";
 import Hero from "@/components/landing/Hero";
 import HowItWorks from "@/components/landing/HowItWorks";
+import Testimonials from "@/components/landing/Testimonials";
 import Navbar from "@/components/landing/Navbar";
 import Plans from "@/components/landing/Plans";
 import GainSimulator from "@/components/landing/GainSimulator";
@@ -13,6 +14,7 @@ const Index = () => {
       <main className="flex flex-col">
         <Hero />
         <HowItWorks />
+        <Testimonials />
         <ReferralSection />
         <GainSimulator />
         <Plans />

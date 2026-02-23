@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Check, X, Eye, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { formatPrice as displayPrice } from "@/lib/currency-utils";
 import {
   Dialog,
   DialogContent,
@@ -58,10 +59,13 @@ const WithdrawalsTable = ({ withdrawals, onRefresh }: WithdrawalsTableProps) => 
 
       // Send notification to worker
       if (withdrawal.worker_id) {
+        const formattedAmount = displayPrice(withdrawal.amount, withdrawal.worker?.country || "AO");
         await supabase.from("notifications").insert({
           user_id: withdrawal.worker_id,
           title: "Saque Aprovado!",
-          message: `Seu saque de ${withdrawal.amount} Kz foi aprovado e será processado em breve.`
+          message: `Seu saque de ${formattedAmount} foi aprovado e será processado em breve.`,
+          is_read: false,
+          link: "/dashboard/worker/wallet"
         });
       }
 
@@ -92,10 +96,13 @@ const WithdrawalsTable = ({ withdrawals, onRefresh }: WithdrawalsTableProps) => 
 
       // Send notification to worker
       if (withdrawalToReject.worker_id) {
+        const formattedAmount = displayPrice(withdrawalToReject.amount, withdrawalToReject.worker?.country || "AO");
         await supabase.from("notifications").insert({
           user_id: withdrawalToReject.worker_id,
           title: "Saque Rejeitado",
-          message: `Seu saque de ${withdrawalToReject.amount} Kz foi rejeitado. Motivo: ${rejectReason}`
+          message: `Seu saque de ${formattedAmount} foi rejeitado. Motivo: ${rejectReason}`,
+          is_read: false,
+          link: "/dashboard/worker/settings"
         });
       }
 
@@ -121,11 +128,8 @@ const WithdrawalsTable = ({ withdrawals, onRefresh }: WithdrawalsTableProps) => 
     });
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("pt-AO", {
-      style: "decimal",
-      minimumFractionDigits: 0
-    }).format(price) + " Kz";
+  const formatPrice = (price: number, country?: string | null) => {
+    return displayPrice(price, country || "AO");
   };
 
   const getMethodLabel = (method: string) => {
@@ -182,7 +186,7 @@ const WithdrawalsTable = ({ withdrawals, onRefresh }: WithdrawalsTableProps) => 
                     </div>
                   </td>
                   <td className="px-4 py-4">
-                    <span className="font-semibold text-gold">{formatPrice(withdrawal.amount)}</span>
+                    <span className="font-semibold text-gold">{formatPrice(withdrawal.amount, withdrawal.worker?.country)}</span>
                   </td>
                   <td className="px-4 py-4">
                     <span className="text-sm text-foreground">{getMethodLabel(withdrawal.withdrawal_method)}</span>
@@ -269,7 +273,7 @@ const WithdrawalsTable = ({ withdrawals, onRefresh }: WithdrawalsTableProps) => 
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Valor</p>
-                  <p className="font-medium text-gold">{formatPrice(selectedWithdrawal.amount)}</p>
+                  <p className="font-medium text-gold">{formatPrice(selectedWithdrawal.amount, selectedWithdrawal.worker?.country)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Método</p>

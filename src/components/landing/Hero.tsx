@@ -79,14 +79,14 @@ const Hero = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1, delay: 1 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto border-t border-white/5 pt-12"
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto border-t border-border pt-12"
           >
             {[
               { icon: Shield, title: "100% Seguro", text: "Pagamentos verificados" },
               { icon: CheckCircle2, title: "Focado em Angola", text: "Moeda local Kwanza" },
-              { icon: ArrowRight, title: "Levantamentos na hora ou até 24h", text: "Número Express ou Transferência/IBAN" }
+              { icon: ArrowRight, title: "Levantamentos a partir de 500 Kz", text: "Número Express ou Transferência/IBAN" }
             ].map((item, idx) => (
-              <div key={idx} className="flex items-center gap-3 text-left p-4 rounded-2xl glass-card border-white/5 hover:border-primary/20 transition-all duration-300">
+              <div key={idx} className="flex items-center gap-3 text-left p-4 rounded-2xl glass-card border-border hover:border-primary/20 transition-all duration-300">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   <item.icon className="w-5 h-5 text-primary" />
                 </div>

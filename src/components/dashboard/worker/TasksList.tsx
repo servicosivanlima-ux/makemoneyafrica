@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import FileUpload from "../common/FileUpload";
 import YouTubeTaskPlayer from "./YouTubeTaskPlayer";
+import { formatPrice } from "@/lib/currency-utils";
 
 interface TasksListProps {
   user: User;
@@ -64,6 +65,10 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
   });
   const [profile, setProfile] = useState<any>(null);
   const [confirmAccount, setConfirmAccount] = useState(false);
+  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
+  const [showProofForm, setShowProofForm] = useState(false);
+  const [hasOpenedLink, setHasOpenedLink] = useState(false);
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
 
   useEffect(() => {
     loadData();
@@ -171,7 +176,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
       }
 
       // Use secure RPC function to claim task
-      const { error } = await supabase.rpc("worker_claim_task", {
+      const { data: newTaskId, error } = await supabase.rpc("worker_claim_task", {
         p_campaign_id: campaign.id,
       });
 
@@ -189,8 +194,33 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
         return;
       }
 
-      toast.success("Tarefa reservada! Complete-a em até 24 horas.");
-      setSelectedCampaign(campaign);
+      toast.success("Tarefa reservada! Siga o link para completar.");
+
+      // Auto-open link
+      window.open(campaign.page_link, '_blank');
+
+      // Prepare the "active task" for the dialog immediately
+      // This allows the dialog to open even before loadData finishes
+      setActiveTask({
+        id: newTaskId as string,
+        campaign_id: campaign.id,
+        status: "in_progress",
+        reward_amount: campaign.reward || 0,
+        assigned_at: new Date().toISOString(),
+        completed_at: null,
+        rejection_reason: null,
+        follow_proof_url: null,
+        like_proof_url: null,
+        comment_proof_url: null,
+        share_proof_url: null,
+        campaign: campaign
+      });
+
+      // Open dialog automatically
+      setOpenTaskId(newTaskId as string);
+      setShowProofForm(false);
+      setHasOpenedLink(true);
+
       loadData();
     } catch (error) {
       console.error("Error claiming task:", error);
@@ -335,7 +365,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                           {getPlatformEmoji(campaign?.platform || "")}
                         </div>
                         <div>
-                          <h3 className="font-display font-bold text-xl text-white mb-1">
+                          <h3 className="font-display font-bold text-xl text-foreground mb-1">
                             {campaign?.plan_type === "ta_no_limao" || campaign?.plan_type === "limao" ? "Tá no Limão" : "Kwanza"} - {campaign?.plan_name}
                           </h3>
                           <div className="flex items-center gap-3">
@@ -353,140 +383,18 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-6">
-                        <div className="text-right">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Potencial</p>
-                          <p className="text-2xl font-black font-display text-gold">{task.reward_amount} Kz</p>
-                        </div>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <button
-                              onClick={() => setSelectedCampaign(campaign || null)}
-                              className="btn-primary px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-xs shadow-neon transition-all active:scale-95"
-                            >
-                              <Upload className="w-4 h-4 mr-2" />
-                              Finalizar
-                            </button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-lg bg-background/95 backdrop-blur-xl border-white/10 shadow-2xl max-h-[85vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle className="text-2xl font-black font-display text-white uppercase tracking-tight">Finalizar Tarefa</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-6 mt-4">
-                              <div className="bg-primary/5 border border-primary/20 p-5 rounded-2xl relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl -mr-12 -mt-12" />
-                                <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-xs mb-3">
-                                  <ShieldCheck className="w-4 h-4" />
-                                  Autenticação da Atividade
-                                </div>
-                                <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
-                                  Esta tarefa deve ser realizada obrigatoriamente pela conta vinculada abaixo para ser validada:
-                                </p>
-                                <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex items-center justify-between gap-2 overflow-hidden group hover:border-primary/50 transition-all">
-                                  <div className="flex items-center gap-3 overflow-hidden">
-                                    <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
-                                      <UserIcon className="w-4 h-4 text-primary" />
-                                    </div>
-                                    <span className="text-xs font-black font-mono truncate text-white">
-                                      {profile?.[`${campaign?.platform}_link`] || "CONTA NÃO VINCULADA"}
-                                    </span>
-                                  </div>
-                                  <button className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-white transition-colors shrink-0">Copiar</button>
-                                </div>
-                              </div>
-
-                              <div className="space-y-4">
-                                {campaign?.platform === "youtube" && campaign?.video_id ? (
-                                  <YouTubeTaskPlayer
-                                    campaign={campaign}
-                                    taskId={task.id}
-                                    userId={user.id}
-                                    onComplete={() => {
-                                      setSelectedCampaign(null);
-                                      loadData();
-                                      onTaskComplete();
-                                    }}
-                                  />
-                                ) : (
-                                  <>
-                                    <FileUpload
-                                      userId={user.id}
-                                      taskId={task.id}
-                                      proofType="follow"
-                                      label="Print de Confirmação (Seguir)"
-                                      required
-                                      value={proofs.follow}
-                                      onChange={(url) => setProofs({ ...proofs, follow: url })}
-                                    />
-
-                                    {(campaign?.plan_type === "kwanza" || (campaign?.plan_type !== "ta_no_limao" && campaign?.plan_type !== "limao")) && (
-                                      <div className="grid grid-cols-1 gap-4">
-                                        <FileUpload
-                                          userId={user.id}
-                                          taskId={task.id}
-                                          proofType="like"
-                                          label="Print de Gostar"
-                                          required
-                                          value={proofs.like}
-                                          onChange={(url) => setProofs({ ...proofs, like: url })}
-                                        />
-                                        <FileUpload
-                                          userId={user.id}
-                                          taskId={task.id}
-                                          proofType="comment"
-                                          label="Print de Comentar"
-                                          required
-                                          value={proofs.comment}
-                                          onChange={(url) => setProofs({ ...proofs, comment: url })}
-                                        />
-                                        <FileUpload
-                                          userId={user.id}
-                                          taskId={task.id}
-                                          proofType="share"
-                                          label="Print de Partilhar"
-                                          required
-                                          value={proofs.share}
-                                          onChange={(url) => setProofs({ ...proofs, share: url })}
-                                        />
-                                      </div>
-                                    )}
-
-                                    <div className="flex items-start space-x-3 p-4 bg-white/5 border border-white/10 rounded-2xl group cursor-pointer hover:bg-white/10 transition-all">
-                                      <Checkbox
-                                        id="confirm-account"
-                                        checked={confirmAccount}
-                                        onCheckedChange={(checked) => setConfirmAccount(checked === true)}
-                                        className="mt-1 border-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                                      />
-                                      <Label
-                                        htmlFor="confirm-account"
-                                        className="text-[10px] font-bold text-muted-foreground leading-relaxed cursor-pointer group-hover:text-white transition-colors"
-                                      >
-                                        DECLARO SOB PENA DE BLOQUEIO QUE REALIZEI A TAREFA USANDO A CONTA ACIMA E SEGUINDO TODAS AS DIRETRIZES DA PLATAFORMA.
-                                      </Label>
-                                    </div>
-
-                                    <button
-                                      onClick={() => submitProofs(task.id, campaign?.plan_type || "ta_no_limao")}
-                                      disabled={uploading || !confirmAccount}
-                                      className="btn-primary w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-neon disabled:opacity-30 disabled:cursor-not-allowed group transition-all"
-                                    >
-                                      {uploading ? (
-                                        <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mx-auto" />
-                                      ) : (
-                                        <span className="flex items-center justify-center gap-2">
-                                          <CheckCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                          Submeter Comprovativos
-                                        </span>
-                                      )}
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
+                      <button
+                        onClick={() => {
+                          setActiveTask(task);
+                          setOpenTaskId(task.id);
+                          setShowProofForm(false);
+                          setHasOpenedLink(false);
+                        }}
+                        className="btn-primary px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-xs shadow-neon transition-all active:scale-95"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Finalizar
+                      </button>
                     </div>
                   </div>
                 );
@@ -530,7 +438,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                 <div key={campaign.id} className="card-premium-glow p-6 group transition-all hover:scale-[1.01]">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
                     <div className="flex items-start gap-4">
-                      <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-4xl group-hover:bg-primary/10 group-hover:border-primary/20 transition-all">
+                      <div className="w-16 h-16 rounded-2xl bg-card/40 border border-border flex items-center justify-center text-4xl group-hover:bg-primary/10 group-hover:border-primary/20 transition-all">
                         {getPlatformEmoji(campaign.platform)}
                       </div>
                       <div>
@@ -538,7 +446,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                           {campaign.plan_type === "ta_no_limao" || campaign.plan_type === "limao" ? "Tá no Limão" : "Kwanza"} - {campaign.plan_name}
                         </h3>
                         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                          <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 font-bold uppercase tracking-widest text-[10px]">
+                          <span className="px-2 py-0.5 rounded-md bg-card/40 border border-border font-bold uppercase tracking-widest text-[10px]">
                             {campaign.platform}
                           </span>
                           <span className="flex items-center gap-1">
@@ -559,7 +467,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                       <div className="text-right">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Recompensa</p>
                         <p className={`text-2xl font-black font-display ${campaign.platform === "youtube" ? "text-red-500" : "text-gold"}`}>
-                          {campaign.reward || (campaign.plan_type === "ta_no_limao" || campaign.plan_type === "limao" ? "100" : "200")} Kz
+                          {campaign.reward ? formatPrice(campaign.reward, profile?.country) : "Consultar"}
                         </p>
                       </div>
                       <button
@@ -580,62 +488,252 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
       </div>
 
       {/* Task History */}
-      {myTasks.filter(t => t.status !== "in_progress" && t.status !== "available").length > 0 && (
-        <div>
-          <h2 className="font-display font-bold text-lg text-foreground mb-4">
-            Histórico de Tarefas
-          </h2>
-          <div className="grid gap-4">
-            {myTasks
-              .filter(t => t.status !== "in_progress" && t.status !== "available")
-              .slice(0, 10)
-              .map((task) => {
-                const campaign = task.campaign;
-                return (
-                  <div key={task.id} className="card-premium-glow p-4 flex items-center justify-between border-white/5 bg-white/[0.02]">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-xl">
-                        {getPlatformEmoji(campaign?.platform || "")}
-                      </div>
-                      <div>
-                        <p className="font-bold text-white text-sm">
-                          {campaign?.plan_type === "ta_no_limao" || campaign?.plan_type === "limao" ? "Tá no Limão" : "Kwanza"} - {campaign?.plan_name}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">
-                          {task.reward_amount} Kz • {new Date(task.completed_at || "").toLocaleDateString()}
-                        </p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          {getTaskStatusBadge(task.status)}
-                          {task.rejection_reason && (
-                            <span className="text-[10px] text-destructive font-medium uppercase truncate max-w-[150px]">{task.rejection_reason}</span>
+      {
+        myTasks.filter(t => t.status !== "in_progress" && t.status !== "available").length > 0 && (
+          <div>
+            <h2 className="font-display font-bold text-lg text-foreground mb-4">
+              Histórico de Tarefas
+            </h2>
+            <div className="grid gap-4">
+              {myTasks
+                .filter(t => t.status !== "in_progress" && t.status !== "available")
+                .slice(0, 10)
+                .map((task) => {
+                  const campaign = task.campaign;
+                  return (
+                    <div key={task.id} className="card-premium-glow p-4 flex items-center justify-between border-border bg-card/20">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-card/40 flex items-center justify-center text-xl">
+                          {getPlatformEmoji(campaign?.platform || "")}
+                        </div>
+                        <div>
+                          <p className="font-bold text-foreground text-sm">
+                            {campaign?.plan_type === "ta_no_limao" || campaign?.plan_type === "limao" ? "Tá no Limão" : "Kwanza"} - {campaign?.plan_name}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">
+                            {formatPrice(task.reward_amount, profile?.country)} • {new Date(task.completed_at || "").toLocaleDateString()}
+                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {getTaskStatusBadge(task.status)}
+                            {task.rejection_reason && (
+                              <span className="text-[10px] text-destructive font-medium uppercase truncate max-w-[150px]">{task.rejection_reason}</span>
+                            )}
+                          </div>
+                          {task.status === "rejected" && (
+                            <div className="mt-2">
+                              <CountdownTimer
+                                scheduledDeletionAt={task.scheduled_deletion_at}
+                                onExpire={() => handleDeleteTask(task.id)}
+                              />
+                            </div>
                           )}
                         </div>
-                        {task.status === "rejected" && (
-                          <div className="mt-2">
-                            <CountdownTimer
-                              scheduledDeletionAt={task.scheduled_deletion_at}
-                              onExpire={() => handleDeleteTask(task.id)}
-                            />
-                          </div>
-                        )}
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <div className="text-right">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Recebido</p>
+                          <p className="font-black text-foreground">{formatPrice(task.reward_amount, profile?.country)}</p>
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-card/40 flex items-center justify-center">
+                          <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Recebido</p>
-                        <p className="font-black text-white">{task.reward_amount} Kz</p>
+                  );
+                })}
+            </div>
+          </div>
+        )
+      }
+      {/* Single Controlled Dialog for Task Completion */}
+      <Dialog open={!!openTaskId} onOpenChange={(open) => {
+        if (!open) {
+          setOpenTaskId(null);
+          setActiveTask(null);
+          setShowProofForm(false);
+          setHasOpenedLink(false);
+        }
+      }}>
+        <DialogContent className="sm:max-w-lg bg-background/95 backdrop-blur-xl border-border shadow-2xl max-h-[95vh] overflow-y-auto p-0 gap-0">
+          {activeTask && (
+            <>
+              <div className="p-6 border-b border-border">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-black font-display text-foreground uppercase tracking-tight">
+                    {showProofForm ? "Enviar Comprovativos" : "Completar Tarefa"}
+                  </DialogTitle>
+                </DialogHeader>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {!showProofForm ? (
+                  <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="bg-primary/10 border border-primary/20 p-6 rounded-2xl text-center">
+                      <h4 className="text-lg font-bold text-foreground mb-2">Paso 1: Siga o Link</h4>
+                      <p className="text-sm text-muted-foreground mb-6">
+                        Para concluir esta tarefa, você deve obrigatoriamente seguir o link abaixo e realizar a ação solicitada.
+                      </p>
+                      <a
+                        href={activeTask.campaign?.page_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setHasOpenedLink(true)}
+                        className="btn-primary inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold uppercase tracking-widest text-sm shadow-neon group"
+                      >
+                        ABRIR MISSÃO <ExternalLink className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                      </a>
+                    </div>
+
+                    <div className="bg-card/40 border border-border p-5 rounded-2xl flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+                          <AlertCircle className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Dica Importante</p>
+                          <p className="text-xs text-muted-foreground leading-tight">
+                            Tire prints da conclusão da tarefa para enviar no próximo passo.
+                          </p>
+                        </div>
                       </div>
-                      <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
-                        <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                    </div>
+
+                    <button
+                      onClick={() => setShowProofForm(true)}
+                      disabled={!hasOpenedLink}
+                      className="btn-gold w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-gold-premium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {hasOpenedLink ? "JÁ SEGUI / CONCLUÍ" : "SIGA O LINK PRIMEIRO"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+                    <div className="bg-primary/5 border border-primary/20 p-5 rounded-2xl relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl -mr-12 -mt-12" />
+                      <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-xs mb-3">
+                        <ShieldCheck className="w-4 h-4" />
+                        Autenticação da Atividade
                       </div>
+                      <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
+                        Esta tarefa deve ser realizada obrigatoriamente pela conta vinculada:
+                      </p>
+                      <div className="bg-card/40 border border-border p-3 rounded-xl flex items-center justify-between gap-2 overflow-hidden group hover:border-primary/50 transition-all">
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+                            <UserIcon className="w-4 h-4 text-primary" />
+                          </div>
+                          <span className="text-xs font-black font-mono truncate text-foreground">
+                            {profile?.[`${activeTask.campaign?.platform}_link`] || "CONTA NÃO VINCULADA"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {activeTask.campaign?.platform === "youtube" && activeTask.campaign?.video_id ? (
+                        <YouTubeTaskPlayer
+                          campaign={activeTask.campaign}
+                          taskId={activeTask.id}
+                          userId={user.id}
+                          onComplete={() => {
+                            setOpenTaskId(null);
+                            setActiveTask(null);
+                            setShowProofForm(false);
+                            loadData();
+                            onTaskComplete();
+                          }}
+                        />
+                      ) : (
+                        <>
+                          <FileUpload
+                            userId={user.id}
+                            taskId={activeTask.id}
+                            proofType="follow"
+                            label="Print de Confirmação (Seguir)"
+                            required
+                            value={proofs.follow}
+                            onChange={(url) => setProofs({ ...proofs, follow: url })}
+                          />
+
+                          {(activeTask.campaign?.plan_type === "kwanza" || (activeTask.campaign?.plan_type !== "ta_no_limao" && activeTask.campaign?.plan_type !== "limao")) && (
+                            <div className="grid grid-cols-1 gap-4">
+                              <FileUpload
+                                userId={user.id}
+                                taskId={activeTask.id}
+                                proofType="like"
+                                label="Print de Gostar"
+                                required
+                                value={proofs.like}
+                                onChange={(url) => setProofs({ ...proofs, like: url })}
+                              />
+                              <FileUpload
+                                userId={user.id}
+                                taskId={activeTask.id}
+                                proofType="comment"
+                                label="Print de Comentar"
+                                required
+                                value={proofs.comment}
+                                onChange={(url) => setProofs({ ...proofs, comment: url })}
+                              />
+                              <FileUpload
+                                userId={user.id}
+                                taskId={activeTask.id}
+                                proofType="share"
+                                label="Print de Partilhar"
+                                required
+                                value={proofs.share}
+                                onChange={(url) => setProofs({ ...proofs, share: url })}
+                              />
+                            </div>
+                          )}
+
+                          <div className="flex items-start space-x-3 p-4 bg-card/40 border border-border rounded-2xl group cursor-pointer hover:bg-card/60 transition-all">
+                            <Checkbox
+                              id="confirm-account"
+                              checked={confirmAccount}
+                              onCheckedChange={(checked) => setConfirmAccount(checked === true)}
+                              className="mt-1 border-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                            />
+                            <Label
+                              htmlFor="confirm-account"
+                              className="text-[10px] font-bold text-muted-foreground leading-relaxed cursor-pointer group-hover:text-foreground transition-colors"
+                            >
+                              DECLARO SOB PENA DE BLOQUEIO QUE REALIZEI A TAREFA USANDO A CONTA ACIMA E SEGUINDO TODAS AS DIRETRIZES DA PLATAFORMA.
+                            </Label>
+                          </div>
+
+                          <button
+                            onClick={() => submitProofs(activeTask.id, activeTask.campaign?.plan_type || "ta_no_limao")}
+                            disabled={uploading || !confirmAccount || !proofs.follow}
+                            className="btn-primary w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-neon disabled:opacity-30 disabled:cursor-not-allowed group transition-all"
+                          >
+                            {uploading ? (
+                              <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mx-auto" />
+                            ) : (
+                              <span className="flex items-center justify-center gap-2">
+                                <CheckCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                Submeter Comprovativos
+                              </span>
+                            )}
+                          </button>
+
+                          <button
+                            onClick={() => setShowProofForm(false)}
+                            className="w-full text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors py-2"
+                          >
+                            Voltar para Instruções
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
-                );
-              })}
-          </div>
-        </div>
-      )}
-    </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div >
   );
 };
 

@@ -106,6 +106,28 @@ const ClientSettings = ({ user }: ClientSettingsProps) => {
   };
 
 
+  const handleSavePersonalInfo = async () => {
+    if (!profile) return;
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          country: profile.country,
+        })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+      toast.success("Informações pessoais actualizadas!");
+      loadProfile();
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao salvar informações");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -156,9 +178,8 @@ const ClientSettings = ({ user }: ClientSettingsProps) => {
               <Select
                 value={profile.country}
                 onValueChange={(value) => setProfile({ ...profile, country: value })}
-                disabled // Standard client settings seem read-only except password
               >
-                <SelectTrigger id="country" className="bg-muted opacity-50 cursor-not-allowed">
+                <SelectTrigger id="country" className="bg-background">
                   <SelectValue placeholder="Selecione o país" />
                 </SelectTrigger>
                 <SelectContent>
@@ -183,6 +204,23 @@ const ClientSettings = ({ user }: ClientSettingsProps) => {
               </div>
             </div>
           </div>
+          <Button
+            onClick={handleSavePersonalInfo}
+            disabled={saving}
+            className="w-full sm:w-auto font-black uppercase tracking-widest text-xs h-12"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                A guardar...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Guardar Informações
+              </>
+            )}
+          </Button>
         </CardContent>
       </Card>
 

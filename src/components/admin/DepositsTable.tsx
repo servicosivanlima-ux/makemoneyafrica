@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Check, X, Clock, ExternalLink, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { formatPrice as displayPrice } from "@/lib/currency-utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -15,6 +16,7 @@ interface DepositRequest {
     profiles?: {
         full_name: string;
         email: string;
+        country: string | null;
     };
 }
 
@@ -62,7 +64,7 @@ const DepositsTable = () => {
             const userIds = [...new Set(depositsData.map((d: any) => d.client_id))];
             const { data: profilesData, error: profilesError } = await supabase
                 .from("profiles")
-                .select("user_id, full_name, email")
+                .select("user_id, full_name, email, country")
                 .in("user_id", userIds);
 
             if (profilesError) throw profilesError;
@@ -127,8 +129,8 @@ const DepositsTable = () => {
         }
     };
 
-    const formatPrice = (price: number) => {
-        return new Intl.NumberFormat("pt-AO").format(price) + " Kz";
+    const formatPrice = (price: number, countryCode: string = "AO") => {
+        return displayPrice(price, countryCode);
     };
 
     if (loading) {
@@ -172,7 +174,7 @@ const DepositsTable = () => {
                                             <div className="text-[10px] text-muted-foreground lowercase">{deposit.profiles?.email}</div>
                                         </td>
                                         <td className="p-4">
-                                            <span className="font-display font-bold text-primary">{formatPrice(deposit.amount)}</span>
+                                            <span className="font-display font-bold text-primary">{formatPrice(deposit.amount, deposit.profiles?.country || "AO")}</span>
                                         </td>
                                         <td className="p-4">
                                             <span className="text-xs text-muted-foreground">

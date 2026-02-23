@@ -35,6 +35,7 @@ interface Profile {
   instagram_link: string | null;
   tiktok_link: string | null;
   youtube_link: string | null;
+  referred_by: string | null;
   created_at: string;
 }
 
@@ -313,6 +314,9 @@ const UsersTable = ({ users, onRefresh }: UsersTableProps) => {
                       <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Cadastro
                       </th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Indicado por
+                      </th>
                       <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Acções
                       </th>
@@ -348,6 +352,11 @@ const UsersTable = ({ users, onRefresh }: UsersTableProps) => {
                         </td>
                         <td className="px-4 py-4">
                           <span className="text-sm text-muted-foreground">{formatDate(user.created_at)}</span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="text-xs text-muted-foreground italic">
+                            {users.find(u => u.user_id === user.referred_by)?.email || "-"}
+                          </span>
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex items-center justify-end gap-2">

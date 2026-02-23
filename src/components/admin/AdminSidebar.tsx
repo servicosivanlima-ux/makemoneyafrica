@@ -132,7 +132,7 @@ const AdminSidebar = ({
             })}
           </nav>
 
-          <div className="mt-6 pt-6 border-t border-white/5">
+          <div className="mt-6 pt-6 border-t border-white/5 space-y-4">
             <button
               onClick={onLogout}
               className="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-muted-foreground/80 hover:bg-red-500/10 hover:text-red-500 border border-transparent hover:border-red-500/20 transition-all group w-full"
@@ -140,6 +140,14 @@ const AdminSidebar = ({
               <LogOut className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
               <span className="font-black text-xs uppercase tracking-[0.15em]">Encerrar Sessão</span>
             </button>
+
+            <div className="flex items-center justify-center gap-2 group cursor-default pt-2">
+              <span className="text-[8px] text-muted-foreground uppercase tracking-widest font-black">Developed by</span>
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5 group-hover:border-primary/20 transition-colors">
+                <img src="/bytekwanza-logo.png" alt="ByteKwanza" className="h-3 w-auto object-contain" />
+                <span className="text-[8px] font-black tracking-tight text-white">ByteKwanza</span>
+              </div>
+            </div>
           </div>
         </div>
       </aside>

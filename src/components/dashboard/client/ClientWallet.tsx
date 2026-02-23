@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { Wallet, Plus, Clock, CheckCircle, XCircle, AlertCircle, Copy, Building2, Smartphone, MessageCircle, Upload, Loader2 } from "lucide-react";
+import { Wallet, Plus, Clock, CheckCircle, XCircle, AlertCircle, Copy, Building2, Smartphone, MessageCircle, Upload, Loader2, CreditCard } from "lucide-react";
+import { formatPrice } from "@/lib/currency-utils";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ const ClientWallet = ({ user }: ClientWalletProps) => {
     const [amount, setAmount] = useState("");
     const [proofUrl, setProofUrl] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [profile, setProfile] = useState<any>(null);
 
     useEffect(() => {
         loadWalletData();
@@ -81,6 +83,7 @@ const ClientWallet = ({ user }: ClientWalletProps) => {
                 .eq("user_id", user.id)
                 .single() as any;
 
+            setProfile(profile);
             setBalance(profile?.wallet_balance || 0);
 
             // Get deposits
@@ -136,8 +139,8 @@ const ClientWallet = ({ user }: ClientWalletProps) => {
         }
     };
 
-    const formatPrice = (price: number) => {
-        return new Intl.NumberFormat("pt-AO").format(price) + " Kz";
+    const displayPrice = (price: number) => {
+        return formatPrice(price, profile?.country);
     };
 
     const copyToClipboard = (text: string, label: string) => {
@@ -161,7 +164,7 @@ const ClientWallet = ({ user }: ClientWalletProps) => {
                             <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Saldo Disponível</h2>
                         </div>
                         <p className="text-5xl font-black font-display text-white">
-                            {formatPrice(balance)}
+                            {displayPrice(balance)}
                         </p>
                         <p className="text-[10px] font-black uppercase tracking-widest text-primary mt-2">Pronto para Investir em Campanhas</p>
                     </div>
@@ -177,7 +180,7 @@ const ClientWallet = ({ user }: ClientWalletProps) => {
                             <DialogHeader>
                                 <DialogTitle className="text-2xl font-black font-display text-white">Recarregar Carteira</DialogTitle>
                             </DialogHeader>
-                            <div className="space-y-6 py-4">
+                            <div className="space-y-6 py-4 overflow-y-auto max-h-[70vh]">
                                 <div className="space-y-2">
                                     <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Valor do Depósito (Kz)</label>
                                     <Input
@@ -189,30 +192,55 @@ const ClientWallet = ({ user }: ClientWalletProps) => {
                                     />
                                 </div>
 
-                                <div className="bg-muted/30 rounded-xl p-4 space-y-4">
-                                    <h4 className="font-display font-semibold text-foreground flex items-center gap-2 text-sm uppercase tracking-widest">
-                                        <Building2 className="w-4 h-4 text-primary" />
-                                        Dados para Transferência
-                                    </h4>
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between items-center p-2 bg-background rounded-lg border border-white/5 group">
-                                            <div className="text-xs">
-                                                <span className="text-muted-foreground">IBAN BFA:</span>
-                                                <div className="font-mono text-white mt-1">0006.0000.5639.8986.3012.6</div>
+                                <div className="grid gap-4">
+                                    {/* Bank Transfer */}
+                                    <div className="bg-muted/30 rounded-xl p-4 space-y-4 border border-white/5">
+                                        <h4 className="font-display font-semibold text-foreground flex items-center gap-2 text-sm uppercase tracking-widest">
+                                            <Building2 className="w-4 h-4 text-primary" />
+                                            Dados Bancários (AO)
+                                        </h4>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center p-2 bg-background rounded-lg border border-white/5 group">
+                                                <div className="text-xs">
+                                                    <span className="text-muted-foreground">IBAN BFA:</span>
+                                                    <div className="font-mono text-white mt-1">0006.0000.5639.8986.3012.6</div>
+                                                </div>
+                                                <button onClick={() => copyToClipboard("0006.0000.5639.8986.3012.6", "IBAN BFA")} className="p-2 hover:bg-primary/20 rounded-lg text-primary opacity-0 group-hover:opacity-100 transition-all">
+                                                    <Copy className="w-4 h-4" />
+                                                </button>
                                             </div>
-                                            <button onClick={() => copyToClipboard("0006.0000.5639.8986.3012.6", "IBAN BFA")} className="p-2 hover:bg-primary/20 rounded-lg text-primary opacity-0 group-hover:opacity-100 transition-all">
-                                                <Copy className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                        <div className="flex justify-between items-center p-2 bg-background rounded-lg border border-white/5 group">
-                                            <div className="text-xs">
-                                                <span className="text-muted-foreground">Express:</span>
-                                                <div className="font-mono text-white mt-1">923 066 682</div>
+                                            <div className="flex justify-between items-center p-2 bg-background rounded-lg border border-white/5 group">
+                                                <div className="text-xs">
+                                                    <span className="text-muted-foreground">Express:</span>
+                                                    <div className="font-mono text-white mt-1">923 066 682</div>
+                                                </div>
+                                                <button onClick={() => copyToClipboard("923066682", "Número")} className="p-2 hover:bg-primary/20 rounded-lg text-primary opacity-0 group-hover:opacity-100 transition-all">
+                                                    <Copy className="w-4 h-4" />
+                                                </button>
                                             </div>
-                                            <button onClick={() => copyToClipboard("923066682", "Número")} className="p-2 hover:bg-primary/20 rounded-lg text-primary opacity-0 group-hover:opacity-100 transition-all">
-                                                <Copy className="w-4 h-4" />
-                                            </button>
                                         </div>
+                                    </div>
+
+                                    {/* PayPal */}
+                                    <div className="bg-primary/5 rounded-xl p-4 space-y-4 border border-primary/20">
+                                        <h4 className="font-display font-semibold text-primary flex items-center gap-2 text-sm uppercase tracking-widest">
+                                            <CreditCard className="w-4 h-4" />
+                                            PayPal (International)
+                                        </h4>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center p-2 bg-background rounded-lg border border-white/5 group">
+                                                <div className="text-xs">
+                                                    <span className="text-muted-foreground">E-mail PayPal:</span>
+                                                    <div className="font-mono text-white mt-1">ivan.luanda19@gmail.com</div>
+                                                </div>
+                                                <button onClick={() => copyToClipboard("ivan.luanda19@gmail.com", "E-mail PayPal")} className="p-2 hover:bg-primary/20 rounded-lg text-primary opacity-0 group-hover:opacity-100 transition-all">
+                                                    <Copy className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground italic text-center">
+                                            * Envie o valor e anexe o comprovativo abaixo.
+                                        </p>
                                     </div>
                                 </div>
 

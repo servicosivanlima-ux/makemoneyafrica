@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Check, X, Eye, Loader2, Upload, Youtube, Facebook, Instagram, Music2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { formatPrice as displayPrice } from "@/lib/currency-utils";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ interface Campaign {
     full_name: string;
     email: string;
     phone: string;
+    country: string | null;
   } | null;
 }
 
@@ -49,10 +51,13 @@ const PaymentsTable = ({ campaigns, onRefresh }: PaymentsTableProps) => {
       // Find campaign for notification
       const campaign = campaigns.find(c => c.id === campaignId);
       if (campaign?.client_id) {
+        const formattedPrice = displayPrice(campaign.price, campaign.client?.country || "AO");
         await supabase.from("notifications" as any).insert({
           user_id: campaign.client_id,
           title: "Pagamento Aprovado!",
-          message: `O seu pagamento para a campanha "${campaign.plan_name}" foi aprovado. A campanha está agora activa!`
+          message: `O seu pagamento para a campanha "${campaign.plan_name}" no valor de ${formattedPrice} foi aprovado. A campanha está agora activa!`,
+          is_read: false,
+          link: "/dashboard/client"
         });
       }
 
@@ -78,10 +83,13 @@ const PaymentsTable = ({ campaigns, onRefresh }: PaymentsTableProps) => {
       // Find campaign for notification
       const campaign = campaigns.find(c => c.id === campaignId);
       if (campaign?.client_id) {
+        const formattedPrice = displayPrice(campaign.price, campaign.client?.country || "AO");
         await supabase.from("notifications" as any).insert({
           user_id: campaign.client_id,
           title: "Pagamento Rejeitado",
-          message: `O seu pagamento para a campanha "${campaign.plan_name}" foi rejeitado. Entre em contacto para mais informações.`
+          message: `O seu pagamento para a campanha "${campaign.plan_name}" no valor de ${formattedPrice} foi rejeitado. Entre em contacto para mais informações.`,
+          is_read: false,
+          link: "/dashboard/client/wallet"
         });
       }
 
@@ -104,11 +112,8 @@ const PaymentsTable = ({ campaigns, onRefresh }: PaymentsTableProps) => {
     });
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("pt-AO", {
-      style: "decimal",
-      minimumFractionDigits: 0
-    }).format(price) + " Kz";
+  const formatPrice = (price: number, countryCode: string = "AO") => {
+    return displayPrice(price, countryCode);
   };
 
   const getPlatformColor = (platform: string) => {
@@ -185,7 +190,7 @@ const PaymentsTable = ({ campaigns, onRefresh }: PaymentsTableProps) => {
                     </span>
                   </td>
                   <td className="px-4 py-4">
-                    <span className="font-semibold text-gold">{formatPrice(campaign.price)}</span>
+                    <span className="font-semibold text-gold">{formatPrice(campaign.price, campaign.client?.country || "AO")}</span>
                   </td>
                   <td className="px-4 py-4">
                     <span className="text-sm text-muted-foreground">{formatDate(campaign.created_at)}</span>
@@ -268,7 +273,7 @@ const PaymentsTable = ({ campaigns, onRefresh }: PaymentsTableProps) => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Valor</p>
-                  <p className="font-medium text-gold">{formatPrice(selectedCampaign.price)}</p>
+                  <p className="font-medium text-gold">{formatPrice(selectedCampaign.price, selectedCampaign.client?.country || "AO")}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Plataforma</p>

@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { toast } from "sonner";
-import { Wallet, CheckCircle, Clock, XCircle, AlertCircle } from "lucide-react";
+import { Wallet, CheckCircle, Clock, XCircle, AlertCircle, CreditCard } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { formatPrice, validateIBAN, formatIBAN } from "@/lib/currency-utils";
 
 interface WithdrawalRequestProps {
   user: User;
@@ -31,8 +32,9 @@ const WithdrawalRequest = ({ user, balance, onWithdrawalComplete }: WithdrawalRe
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<"iban" | "multicaixa">("multicaixa");
   const [details, setDetails] = useState("");
+  const [profile, setProfile] = useState<any>(null);
 
-  const MIN_WITHDRAWAL = 1000;
+  const MIN_WITHDRAWAL = 500;
 
   useEffect(() => {
     loadWithdrawals();
@@ -56,6 +58,14 @@ const WithdrawalRequest = ({ user, balance, onWithdrawalComplete }: WithdrawalRe
     }
   };
 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data } = await supabase.from("profiles").select("country").eq("id", user.id).single();
+      setProfile(data);
+    };
+    fetchProfile();
+  }, [user.id]);
+
   const handleSubmit = async () => {
     const amountNum = parseInt(amount);
 
@@ -70,9 +80,26 @@ const WithdrawalRequest = ({ user, balance, onWithdrawalComplete }: WithdrawalRe
     }
 
     if (!details.trim()) {
-      toast.error(method === "iban" ? "Insira o IBAN" : "Insira o número Multicaixa Express");
+      let errorMsg = "Insira os detalhes";
+      if (method === "iban") errorMsg = "Insira o IBAN";
+      else if (method === "multicaixa") errorMsg = "Insira o número Multicaixa Express";
+      else if (method === "paypal") errorMsg = "Insira o seu e-mail do PayPal";
+
+      toast.error(errorMsg);
       return;
     }
+
+    if (method === "iban") {
+      const validation = validateIBAN(details, profile?.country || "AO");
+      if (!validation.isValid) {
+        toast.error(validation.error);
+        return;
+      }
+    }
+
+    const finalDetails = method === "iban"
+      ? formatIBAN(details, profile?.country || "AO")
+      : details;
 
     // Check for pending withdrawal
     const hasPending = withdrawals.some(w => w.status === "pending");
@@ -87,7 +114,7 @@ const WithdrawalRequest = ({ user, balance, onWithdrawalComplete }: WithdrawalRe
         worker_id: user.id,
         amount: amountNum,
         withdrawal_method: method,
-        withdrawal_details: details,
+        withdrawal_details: finalDetails,
         status: "pending",
       });
 
@@ -107,8 +134,8 @@ const WithdrawalRequest = ({ user, balance, onWithdrawalComplete }: WithdrawalRe
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("pt-AO").format(price) + " Kz";
+  const displayPrice = (price: number) => {
+    return formatPrice(price, profile?.country);
   };
 
   const getStatusBadge = (status: string) => {
@@ -172,10 +199,10 @@ const WithdrawalRequest = ({ user, balance, onWithdrawalComplete }: WithdrawalRe
               </h2>
             </div>
             <div className="text-3xl font-bold text-gradient-gold">
-              {formatPrice(balance)}
+              {displayPrice(balance)}
             </div>
             <p className="text-sm font-medium text-primary mt-1">
-              {balance >= MIN_WITHDRAWAL ? "Já pode efectuar saques" : `Limite para levantamento de ${formatPrice(MIN_WITHDRAWAL)}`}
+              {balance >= MIN_WITHDRAWAL ? "✅ Já pode efectuar saques" : `⚠️ Levantamento mínimo: ${displayPrice(MIN_WITHDRAWAL)}`}
             </p>
           </div>
 
@@ -205,13 +232,13 @@ const WithdrawalRequest = ({ user, balance, onWithdrawalComplete }: WithdrawalRe
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    placeholder={`Mínimo ${MIN_WITHDRAWAL} Kz`}
+                    placeholder={`Valor (Mínimo ${displayPrice(MIN_WITHDRAWAL)})`}
                     min={MIN_WITHDRAWAL}
                     max={balance}
                     className="input-styled w-full"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Disponível: {formatPrice(balance)}
+                    Disponível: {displayPrice(balance)}
                   </p>
                 </div>
 
@@ -240,26 +267,38 @@ const WithdrawalRequest = ({ user, balance, onWithdrawalComplete }: WithdrawalRe
                     >
                       <span className="font-medium text-foreground">IBAN</span>
                     </button>
+                    {profile?.country !== "AO" && (
+                      <button
+                        type="button"
+                        onClick={() => setMethod("paypal" as any)}
+                        className={`p-3 rounded-lg border-2 transition-all ${method === ("paypal" as any)
+                          ? "border-primary bg-primary/10"
+                          : "border-border hover:border-primary/50"
+                          }`}
+                      >
+                        <span className="font-medium text-foreground">PayPal</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    {method === "iban" ? "IBAN" : "Número Multicaixa Express"}
+                    {method === "iban" ? "IBAN" : method === "multicaixa" ? "Número Multicaixa Express" : "E-mail PayPal"}
                   </label>
                   <input
                     type="text"
                     value={details}
                     onChange={(e) => setDetails(e.target.value)}
-                    placeholder={method === "iban" ? "AO06..." : "9XX XXX XXX"}
+                    placeholder={method === "iban" ? "AO06..." : method === "multicaixa" ? "9XX XXX XXX" : "email@exemplo.com"}
                     className="input-styled w-full"
                   />
                 </div>
 
                 <div className="bg-muted/50 p-3 rounded-lg">
                   <p className="text-xs text-muted-foreground flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                    Os levantamentos são processados manualmente e podem levar até 48 horas úteis.
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-gold" />
+                    <span>O valor mínimo para levantamento é de <b>{displayPrice(MIN_WITHDRAWAL)}</b>. Os pedidos são processados manualmente em até 48h úteis.</span>
                   </p>
                 </div>
 
@@ -303,10 +342,10 @@ const WithdrawalRequest = ({ user, balance, onWithdrawalComplete }: WithdrawalRe
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <span className="font-bold text-foreground">
-                      {formatPrice(withdrawal.amount)}
+                      {displayPrice(withdrawal.amount)}
                     </span>
                     <span className="text-sm text-muted-foreground ml-2">
-                      via {withdrawal.withdrawal_method === "iban" ? "IBAN" : "Multicaixa Express"}
+                      via {withdrawal.withdrawal_method === "iban" ? "IBAN" : withdrawal.withdrawal_method === "multicaixa" ? "Multicaixa Express" : "PayPal"}
                     </span>
                   </div>
                   {getStatusBadge(withdrawal.status)}

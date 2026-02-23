@@ -98,9 +98,18 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-          <p className="text-xs text-muted-foreground uppercase tracking-[0.2em] font-bold">
-            © {new Date().getFullYear()} Make Money With Lima. A revolução digital angolana. Actualidade garantida.
-          </p>
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-muted-foreground uppercase tracking-[0.2em] font-bold">
+              © {new Date().getFullYear()} Make Money With Lima. A revolução digital angolana. Actualidade garantida.
+            </p>
+            <div className="flex items-center justify-center md:justify-start gap-2 group cursor-default">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">Desenvolvido por</span>
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5 group-hover:border-primary/20 transition-colors">
+                <img src="/bytekwanza-logo.png" alt="ByteKwanza" className="h-4 w-auto object-contain" />
+                <span className="text-[10px] font-black tracking-tight text-white">ByteKwanza</span>
+              </div>
+            </div>
+          </div>
           <div className="flex flex-col md:flex-row items-center gap-4">
             <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 rounded-full border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
               <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">+18 ANOS</span>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Check, X, Eye, Loader2, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { formatPrice as displayPrice } from "@/lib/currency-utils";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ interface Task {
   worker: {
     full_name: string;
     email: string;
+    country: string | null;
   } | null;
 }
 
@@ -58,10 +60,13 @@ const TasksTable = ({ tasks, onRefresh }: TasksTableProps) => {
 
       // Send notification to worker
       if (task.worker_id) {
+        const formattedReward = displayPrice(task.reward_amount, task.worker?.country || "AO");
         await supabase.from("notifications" as any).insert({
           user_id: task.worker_id,
           title: "Tarefa Aprovada!",
-          message: `A sua tarefa foi aprovada. ${task.reward_amount} Kz foram adicionados ao seu saldo.`
+          message: `A sua tarefa foi aprovada. ${formattedReward} foram adicionados ao seu saldo.`,
+          is_read: false,
+          link: "/dashboard/worker/tasks"
         });
       }
 
@@ -95,7 +100,9 @@ const TasksTable = ({ tasks, onRefresh }: TasksTableProps) => {
         await supabase.from("notifications" as any).insert({
           user_id: taskToReject.worker_id,
           title: "Tarefa Rejeitada",
-          message: `A sua tarefa foi rejeitada. Motivo: ${rejectReason}`
+          message: `A sua tarefa foi rejeitada. Motivo: ${rejectReason}`,
+          is_read: false,
+          link: "/dashboard/worker/tasks"
         });
       }
 
@@ -184,7 +191,7 @@ const TasksTable = ({ tasks, onRefresh }: TasksTableProps) => {
                     </span>
                   </td>
                   <td className="px-4 py-4">
-                    <span className="font-semibold text-gold">{task.reward_amount} Kz</span>
+                    <span className="font-semibold text-gold">{displayPrice(task.reward_amount, task.worker?.country || "AO")}</span>
                   </td>
                   <td className="px-4 py-4">
                     <span className="text-sm text-muted-foreground">

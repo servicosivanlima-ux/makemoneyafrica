@@ -1,4 +1,5 @@
 import { TrendingUp, Wallet, CheckCircle, Clock } from "lucide-react";
+import { formatPrice } from "@/lib/currency-utils";
 
 interface ClientStatsProps {
   activeCampaigns: number;
@@ -7,12 +8,11 @@ interface ClientStatsProps {
   pendingTasks: number;
   totalTargetTasks: number;
   walletBalance: number;
+  country?: string;
 }
 
-const ClientStats = ({ activeCampaigns, totalSpent, completedTasks, pendingTasks, totalTargetTasks, walletBalance }: ClientStatsProps) => {
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("pt-AO").format(price) + " Kz";
-  };
+const ClientStats = ({ activeCampaigns, totalSpent, completedTasks, pendingTasks, totalTargetTasks, walletBalance, country }: ClientStatsProps) => {
+  const displayPrice = (price: number) => formatPrice(price, country);
 
   const remainingTasks = Math.max(0, totalTargetTasks - completedTasks);
 
@@ -26,7 +26,7 @@ const ClientStats = ({ activeCampaigns, totalSpent, completedTasks, pendingTasks
           </div>
           <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Campanhas Activas</h3>
         </div>
-        <p className="text-4xl font-black font-display text-white">{activeCampaigns}</p>
+        <p className="text-4xl font-black font-display text-foreground">{activeCampaigns}</p>
         <p className="text-[10px] font-black uppercase tracking-widest text-primary mt-2 flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
           Em Tempo Real
@@ -41,7 +41,7 @@ const ClientStats = ({ activeCampaigns, totalSpent, completedTasks, pendingTasks
           </div>
           <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Saldo Carteira</h3>
         </div>
-        <p className="text-4xl font-black font-display text-white">{formatPrice(walletBalance)}</p>
+        <p className="text-4xl font-black font-display text-foreground">{displayPrice(walletBalance)}</p>
         <p className="text-[10px] font-black uppercase tracking-widest text-gold mt-2">Disponível</p>
       </div>
 
@@ -53,7 +53,7 @@ const ClientStats = ({ activeCampaigns, totalSpent, completedTasks, pendingTasks
           </div>
           <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Total Gasto</h3>
         </div>
-        <p className="text-4xl font-black font-display text-white">{formatPrice(totalSpent)}</p>
+        <p className="text-4xl font-black font-display text-foreground">{displayPrice(totalSpent)}</p>
         <p className="text-[10px] font-black uppercase tracking-widest text-primary mt-2">Investimento Total</p>
       </div>
 
@@ -66,7 +66,7 @@ const ClientStats = ({ activeCampaigns, totalSpent, completedTasks, pendingTasks
           <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Concluídas</h3>
         </div>
         <div className="flex items-baseline gap-2">
-          <p className="text-4xl font-black font-display text-white">{completedTasks}</p>
+          <p className="text-4xl font-black font-display text-foreground">{completedTasks}</p>
           {totalTargetTasks > 0 && (
             <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
               / {totalTargetTasks}
@@ -86,7 +86,7 @@ const ClientStats = ({ activeCampaigns, totalSpent, completedTasks, pendingTasks
           </div>
           <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Pendentes</h3>
         </div>
-        <p className="text-4xl font-black font-display text-white">{pendingTasks}</p>
+        <p className="text-4xl font-black font-display text-foreground">{pendingTasks}</p>
         <p className="text-[10px] font-black uppercase tracking-widest text-gold mt-2">Aguardando Pagamento</p>
       </div>
     </div>

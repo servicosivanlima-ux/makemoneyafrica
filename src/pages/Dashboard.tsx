@@ -91,7 +91,9 @@ const Dashboard = () => {
                 checkWorkerVerification(session.user.id);
               }
               // Track user access
-              (supabase.rpc as any)("track_user_access", { p_user_id: session.user.id });
+              (supabase.rpc as any)("track_user_access").then(({ error }: any) => {
+                if (error) console.error("Error tracking access:", error);
+              });
             }
           });
       }
@@ -133,7 +135,9 @@ const Dashboard = () => {
                     checkWorkerVerification(session?.user.id || "");
                   }
                   // Track user access
-                  (supabase.rpc as any)("track_user_access", { p_user_id: session?.user.id });
+                  (supabase.rpc as any)("track_user_access").then(({ error }: any) => {
+                    if (error) console.error("Error tracking access (session):", error);
+                  });
                 }
               });
           });
@@ -225,7 +229,11 @@ const Dashboard = () => {
         const withdrawnAmount = withdrawals?.filter(w => ["approved", "pending"].includes(w.status))
           .reduce((sum, w) => sum + w.amount, 0) || 0;
 
-        const balance = totalEarned - withdrawnAmount;
+        // Get referral commissions
+        const { data: refStats } = await (supabase.rpc as any)("get_worker_referral_stats").select("*").maybeSingle();
+        const referralEarned = refStats?.total_commissions || 0;
+
+        const balance = totalEarned + referralEarned - withdrawnAmount;
 
         // Get IDs of campaigns the worker has already claimed
         const claimedCampaignIds = tasks?.map(t => t.campaign_id) || [];
@@ -242,7 +250,7 @@ const Dashboard = () => {
           balance,
           availableTasks: realAvailableTasks,
           completedTasks,
-          totalEarned,
+          totalEarned: totalEarned + referralEarned,
         });
       }
     } catch (error) {
@@ -362,7 +370,7 @@ const Dashboard = () => {
           {/* Client Dashboard */}
           {userType === "client" && activeSection === "dashboard" && (
             <>
-              <ClientStats {...clientStats} />
+              <ClientStats {...clientStats} country={profile?.country} />
               <ClientCampaigns
                 user={user}
                 onCreateCampaign={() => setActiveSection("criar-campanha")}
@@ -389,7 +397,7 @@ const Dashboard = () => {
           {/* Worker Dashboard */}
           {userType === "worker" && activeSection === "dashboard" && (
             <>
-              <WorkerStats {...workerStats} />
+              <WorkerStats {...workerStats} country={profile?.country} />
               <TasksList user={user} onTaskComplete={refreshData} />
             </>
           )}

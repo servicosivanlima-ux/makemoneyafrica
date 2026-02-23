@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, X, Eye, Loader2, FileText, ExternalLink } from "lucide-react";
+import { Check, X, Eye, Loader2, FileText, ExternalLink, Camera, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -20,6 +20,7 @@ interface KycDocument {
     doc_country: string;
     doc_name: string;
     doc_image_url: string;
+    selfie_url?: string;
     status: string;
     verified: boolean;
     created_at: string;
@@ -298,30 +299,73 @@ const KycTable = ({ kycDocuments, onRefresh }: KycTableProps) => {
                             </div>
 
                             <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Captura Digital do Documento</p>
-                                    <a
-                                        href={selectedDoc.doc_image_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-1.5 text-[9px] font-black text-primary uppercase tracking-widest hover:underline"
-                                    >
-                                        Abrir em nova guia <ExternalLink className="w-3 h-3" />
-                                    </a>
-                                </div>
-                                <div className="relative aspect-video flex items-center justify-center bg-black/50 border border-white/5 rounded-2xl overflow-hidden group shadow-inner">
-                                    {selectedDoc.doc_image_url ? (
-                                        <img
-                                            src={selectedDoc.doc_image_url}
-                                            alt="Documento"
-                                            className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105"
-                                        />
-                                    ) : (
-                                        <div className="text-center p-8">
-                                            <FileText className="w-12 h-12 text-white/10 mx-auto mb-2" />
-                                            <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Imagem não disponível</p>
+                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Comparação Visual · Documento vs Selfie</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Document Image */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-[9px] font-black text-primary uppercase tracking-widest flex items-center gap-1.5">
+                                                <FileText className="w-3 h-3" /> Documento Oficial
+                                            </p>
+                                            {selectedDoc.doc_image_url && (
+                                                <a
+                                                    href={selectedDoc.doc_image_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-1 text-[8px] font-black text-muted-foreground uppercase tracking-widest hover:text-primary transition-colors"
+                                                >
+                                                    Abrir <ExternalLink className="w-2.5 h-2.5" />
+                                                </a>
+                                            )}
                                         </div>
-                                    )}
+                                        <div className="relative aspect-[4/3] flex items-center justify-center bg-black/50 border border-white/5 rounded-2xl overflow-hidden group shadow-inner">
+                                            {selectedDoc.doc_image_url ? (
+                                                <img
+                                                    src={selectedDoc.doc_image_url}
+                                                    alt="Documento"
+                                                    className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105"
+                                                />
+                                            ) : (
+                                                <div className="text-center p-8">
+                                                    <FileText className="w-12 h-12 text-white/10 mx-auto mb-2" />
+                                                    <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Imagem não disponível</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Selfie Image */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-[9px] font-black text-gold uppercase tracking-widest flex items-center gap-1.5">
+                                                <Camera className="w-3 h-3" /> Selfie de Verificação
+                                            </p>
+                                            {selectedDoc.selfie_url && (
+                                                <a
+                                                    href={selectedDoc.selfie_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-1 text-[8px] font-black text-muted-foreground uppercase tracking-widest hover:text-gold transition-colors"
+                                                >
+                                                    Abrir <ExternalLink className="w-2.5 h-2.5" />
+                                                </a>
+                                            )}
+                                        </div>
+                                        <div className="relative aspect-[4/3] flex items-center justify-center bg-black/50 border border-white/5 rounded-2xl overflow-hidden group shadow-inner">
+                                            {selectedDoc.selfie_url ? (
+                                                <img
+                                                    src={selectedDoc.selfie_url}
+                                                    alt="Selfie"
+                                                    className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105"
+                                                />
+                                            ) : (
+                                                <div className="text-center p-8">
+                                                    <User className="w-12 h-12 text-white/10 mx-auto mb-2" />
+                                                    <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Selfie não enviada</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

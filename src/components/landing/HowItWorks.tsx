@@ -63,7 +63,7 @@ const HowItWorks = () => {
     {
       icon: Wallet,
       title: "4. Sacar Ganhos",
-      description: "Retire o seu dinheiro acumulado directamente para a sua conta bancária.",
+      description: "Retire o seu dinheiro acumulado com um saque mínimo de apenas 500 Kz, diretamente para a sua conta.",
     },
   ];
 
@@ -78,7 +78,7 @@ const HowItWorks = () => {
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="inline-block px-4 py-1 rounded-full bg-white/5 border border-white/10 text-primary text-xs font-black uppercase tracking-widest mb-4"
+            className="inline-block px-4 py-1 rounded-full bg-card/60 border border-border text-primary text-xs font-black uppercase tracking-widest mb-4"
           >
             Fluxo de Trabalho
           </motion.span>
@@ -130,7 +130,7 @@ const HowItWorks = () => {
             >
               {clientSteps.map((step, i) => (
                 <motion.div key={i} variants={itemVariants} className="flex gap-5 group">
-                  <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-primary/10 group-hover:border-primary/30 transition-all duration-300">
+                  <div className="w-12 h-12 rounded-xl bg-card/60 border border-border flex items-center justify-center shrink-0 group-hover:bg-primary/10 group-hover:border-primary/30 transition-all duration-300">
                     <step.icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                   <div className="pt-1">
@@ -168,7 +168,7 @@ const HowItWorks = () => {
             >
               {workerSteps.map((step, i) => (
                 <motion.div key={i} variants={itemVariants} className="flex gap-5 group">
-                  <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-yellow-500/10 group-hover:border-yellow-500/30 transition-all duration-300">
+                  <div className="w-12 h-12 rounded-xl bg-card/60 border border-border flex items-center justify-center shrink-0 group-hover:bg-yellow-500/10 group-hover:border-yellow-500/30 transition-all duration-300">
                     <step.icon className="w-5 h-5 text-muted-foreground group-hover:text-yellow-500 transition-colors" />
                   </div>
                   <div className="pt-1">
