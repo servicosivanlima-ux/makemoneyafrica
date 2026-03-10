@@ -219,10 +219,10 @@ const ClientWallet = ({ user }: ClientWalletProps) => {
                                                     Transferir para o seguinte IBAN para recarregar através do KWiK
                                                 </p>
                                                 <p className="text-gray-500 font-mono text-sm break-all">
-                                                    AO06 0420 0000 0000 0328 9691 7
+                                                    0006 0000 5639 8986 3012 6
                                                 </p>
                                                 <button
-                                                    onClick={() => copyToClipboard("AO06 0420 0000 0000 0328 9691 7", "IBAN")}
+                                                    onClick={() => copyToClipboard("0006 0000 5639 8986 3012 6", "IBAN")}
                                                     className="text-[#7c3aed] text-sm font-medium hover:underline block pt-1"
                                                 >
                                                     Cópia
