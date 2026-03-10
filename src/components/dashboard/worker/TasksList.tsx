@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { ExternalLink, Upload, CheckCircle, Clock, XCircle, AlertCircle, ShieldCheck, User as UserIcon, Trash2, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import CountdownTimer from "../common/CountdownTimer";
+import ActiveTaskTimer from "./ActiveTaskTimer";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import FileUpload from "../common/FileUpload";
@@ -194,32 +195,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
         return;
       }
 
-      toast.success("Tarefa reservada! Siga o link para completar.");
-
-      // Auto-open link
-      window.open(campaign.page_link, '_blank');
-
-      // Prepare the "active task" for the dialog immediately
-      // This allows the dialog to open even before loadData finishes
-      setActiveTask({
-        id: newTaskId as string,
-        campaign_id: campaign.id,
-        status: "in_progress",
-        reward_amount: campaign.reward || 0,
-        assigned_at: new Date().toISOString(),
-        completed_at: null,
-        rejection_reason: null,
-        follow_proof_url: null,
-        like_proof_url: null,
-        comment_proof_url: null,
-        share_proof_url: null,
-        campaign: campaign
-      });
-
-      // Open dialog automatically
-      setOpenTaskId(newTaskId as string);
-      setShowProofForm(false);
-      setHasOpenedLink(true);
+      toast.success("Tarefa reservada! Verifique 'As Minhas Tarefas em Curso' para finalizar.");
 
       loadData();
     } catch (error) {
@@ -383,18 +359,26 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                           </div>
                         </div>
                       </div>
-                      <button
-                        onClick={() => {
-                          setActiveTask(task);
-                          setOpenTaskId(task.id);
-                          setShowProofForm(false);
-                          setHasOpenedLink(false);
-                        }}
-                        className="btn-primary px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-xs shadow-neon transition-all active:scale-95"
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Finalizar
-                      </button>
+                      <div className="flex flex-col items-center gap-3">
+                        <ActiveTaskTimer
+                          taskId={task.id}
+                          assignedAt={task.assigned_at!}
+                          timeLimitMinutes={15}
+                          onExpire={handleDeleteTask}
+                        />
+                        <button
+                          onClick={() => {
+                            setActiveTask(task);
+                            setOpenTaskId(task.id);
+                            setShowProofForm(false);
+                            setHasOpenedLink(false);
+                          }}
+                          className="btn-primary w-full px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-xs shadow-neon transition-all active:scale-95"
+                        >
+                          <Upload className="w-4 h-4 mr-2 inline" />
+                          Finalizar
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );

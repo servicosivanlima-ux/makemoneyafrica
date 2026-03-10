@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { Wallet, Plus, Clock, CheckCircle, XCircle, AlertCircle, Copy, Building2, Smartphone, MessageCircle, Upload, Loader2, CreditCard } from "lucide-react";
+import { Wallet, Plus, Clock, CheckCircle, XCircle, AlertCircle, Copy, HelpCircle, Smartphone, MessageCircle, Upload, Loader2 } from "lucide-react";
 import { formatPrice } from "@/lib/currency-utils";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -192,55 +192,84 @@ const ClientWallet = ({ user }: ClientWalletProps) => {
                                     />
                                 </div>
 
-                                <div className="grid gap-4">
-                                    {/* Bank Transfer */}
-                                    <div className="bg-muted/30 rounded-xl p-4 space-y-4 border border-white/5">
-                                        <h4 className="font-display font-semibold text-foreground flex items-center gap-2 text-sm uppercase tracking-widest">
-                                            <Building2 className="w-4 h-4 text-primary" />
-                                            Dados Bancários (AO)
-                                        </h4>
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-center p-2 bg-background rounded-lg border border-white/5 group">
-                                                <div className="text-xs">
-                                                    <span className="text-muted-foreground">IBAN BFA:</span>
-                                                    <div className="font-mono text-white mt-1">0006.0000.5639.8986.3012.6</div>
-                                                </div>
-                                                <button onClick={() => copyToClipboard("0006.0000.5639.8986.3012.6", "IBAN BFA")} className="p-2 hover:bg-primary/20 rounded-lg text-primary opacity-0 group-hover:opacity-100 transition-all">
-                                                    <Copy className="w-4 h-4" />
-                                                </button>
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 text-[#7c3aed] text-sm font-medium cursor-pointer hover:underline">
+                                        <HelpCircle className="w-4 h-4" />
+                                        <span>Como recarregar com KWiK?</span>
+                                    </div>
+                                    <p className="text-[#6366f1] text-[13px]">
+                                        Recomendado: recarregar com KWiK, mais estável e mais rápido
+                                    </p>
+
+                                    {/* KWiK Details */}
+                                    <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm relative overflow-hidden">
+                                        <div className="absolute top-0 right-0">
+                                            <div className="bg-red-500 text-white text-[10px] font-bold px-4 py-1 rotate-45 translate-x-3 -translate-y-1 shadow-sm">
+                                                HOT
                                             </div>
-                                            <div className="flex justify-between items-center p-2 bg-background rounded-lg border border-white/5 group">
-                                                <div className="text-xs">
-                                                    <span className="text-muted-foreground">Express:</span>
-                                                    <div className="font-mono text-white mt-1">923 066 682</div>
+                                        </div>
+                                        <div className="flex items-start gap-4">
+                                            <div className="flex-shrink-0 pt-1">
+                                                <div className="w-16 h-8 flex items-center justify-center font-black text-[#003366] text-xl italic tracking-tighter">
+                                                    KWiK
                                                 </div>
-                                                <button onClick={() => copyToClipboard("923066682", "Número")} className="p-2 hover:bg-primary/20 rounded-lg text-primary opacity-0 group-hover:opacity-100 transition-all">
-                                                    <Copy className="w-4 h-4" />
+                                            </div>
+                                            <div className="flex-1 space-y-1">
+                                                <p className="text-gray-900 font-bold text-sm leading-tight">
+                                                    Transferir para o seguinte IBAN para recarregar através do KWiK
+                                                </p>
+                                                <p className="text-gray-500 font-mono text-sm break-all">
+                                                    AO06 0420 0000 0000 0328 9691 7
+                                                </p>
+                                                <button
+                                                    onClick={() => copyToClipboard("AO06 0420 0000 0000 0328 9691 7", "IBAN")}
+                                                    className="text-[#7c3aed] text-sm font-medium hover:underline block pt-1"
+                                                >
+                                                    Cópia
                                                 </button>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* PayPal */}
-                                    <div className="bg-primary/5 rounded-xl p-4 space-y-4 border border-primary/20">
-                                        <h4 className="font-display font-semibold text-primary flex items-center gap-2 text-sm uppercase tracking-widest">
-                                            <CreditCard className="w-4 h-4" />
-                                            PayPal (International)
-                                        </h4>
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-center p-2 bg-background rounded-lg border border-white/5 group">
-                                                <div className="text-xs">
-                                                    <span className="text-muted-foreground">E-mail PayPal:</span>
-                                                    <div className="font-mono text-white mt-1">ivan.luanda19@gmail.com</div>
+                                    {/* Multicaixa Details */}
+                                    <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                                        <div className="flex items-start gap-4">
+                                            <div className="flex-shrink-0 pt-1">
+                                                <div className="w-12 h-12 flex items-center justify-center p-1 border rounded-lg overflow-hidden">
+                                                    <img
+                                                        src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Multicaixa_logo.svg/1200px-Multicaixa_logo.svg.png"
+                                                        alt="Multicaixa"
+                                                        className="w-full h-auto object-contain"
+                                                    />
                                                 </div>
-                                                <button onClick={() => copyToClipboard("ivan.luanda19@gmail.com", "E-mail PayPal")} className="p-2 hover:bg-primary/20 rounded-lg text-primary opacity-0 group-hover:opacity-100 transition-all">
-                                                    <Copy className="w-4 h-4" />
-                                                </button>
+                                            </div>
+                                            <div className="flex-1 space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-gray-900 font-bold">Reference ID:</span>
+                                                        <span className="text-gray-500 font-mono">923 066 682</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => copyToClipboard("923 066 682", "Reference ID")}
+                                                        className="text-[#7c3aed] text-sm font-medium hover:underline"
+                                                    >
+                                                        Cópia
+                                                    </button>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-gray-900 font-bold">EntityId ID:</span>
+                                                        <span className="text-gray-500 font-mono">10116</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => copyToClipboard("10116", "EntityId ID")}
+                                                        className="text-[#7c3aed] text-sm font-medium hover:underline"
+                                                    >
+                                                        Cópia
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                        <p className="text-[10px] text-muted-foreground italic text-center">
-                                            * Envie o valor e anexe o comprovativo abaixo.
-                                        </p>
                                     </div>
                                 </div>
 
