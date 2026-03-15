@@ -119,10 +119,15 @@ const BusinessPromotion = () => {
                             transition={{ delay: 0.5 }}
                             className="pt-4"
                         >
-                            <Link to="/auth?type=client&signup=true" className="btn-primary px-8 py-4 rounded-xl flex items-center justify-center gap-3 w-full sm:w-auto group">
+                            <a
+                                href="https://wa.me/244923066682?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20como%20criar%20uma%20campanha%20de%20vídeo%20(Voz%20Real)%20para%20o%20meu%20produto."
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-primary px-8 py-4 rounded-xl flex items-center justify-center gap-3 w-full sm:w-auto group"
+                            >
                                 <span className="font-black uppercase tracking-widest text-sm">Criar Minha Campanha de Vídeo</span>
                                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                            </Link>
+                            </a>
                         </motion.div>
                     </div>
                 </div>
