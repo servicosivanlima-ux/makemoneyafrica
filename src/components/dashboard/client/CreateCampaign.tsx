@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Check, Zap, Star, Youtube, MessageCircle, Clock, AlertTriangle, Copy, Upload, Loader2, Wallet } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Zap, Star, Youtube, MessageCircle, Clock, AlertTriangle, Copy, Upload, Loader2, Wallet, ShieldCheck, Users } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import FileUpload from "../common/FileUpload";
 import { formatPrice as displayPrice } from "@/lib/currency-utils";
@@ -68,32 +68,32 @@ const LIMAO_PLANS: PlanOption[] = [{
 const KWANZA_PLANS: PlanOption[] = [{
   name: "Básico",
   count: 50,
-  price: 30000
+  price: 3000
 }, {
-  name: "Super Básico",
+  name: "Starter",
   count: 100,
-  price: 50000
+  price: 5000
 }, {
-  name: "Tá Fixe",
-  count: 150,
-  price: 70000,
+  name: "Popular",
+  count: 250,
+  price: 10000,
   popular: true
 }, {
   name: "Bronze",
-  count: 200,
-  price: 100000
+  count: 500,
+  price: 18000
 }, {
   name: "Prata",
-  count: 500,
-  price: 250000
+  count: 1000,
+  price: 30000
 }, {
   name: "Ouro",
-  count: 1000,
-  price: 400000
+  count: 2500,
+  price: 65000
 }, {
   name: "Premium",
-  count: 2500,
-  price: 850000,
+  count: 5000,
+  price: 120000,
   premium: true
 }];
 
@@ -150,6 +150,9 @@ const CreateCampaign = ({
   const [pageLink, setPageLink] = useState("");
   const [profileLink, setProfileLink] = useState("");
   const [videoLink, setVideoLink] = useState("");
+  const [videoTitle, setVideoTitle] = useState("");
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [campaignGoal, setCampaignGoal] = useState<"followers" | "engagement">("followers");
 
   const formatPrice = (price: number) => {
     return displayPrice(price, userCountry);
@@ -204,7 +207,6 @@ const CreateCampaign = ({
   };
 
   const [videoId, setVideoId] = useState("");
-  const [videoDuration, setVideoDuration] = useState(0);
   const [customBudget, setCustomBudget] = useState(0);
   const [rewardPerTask, setRewardPerTask] = useState(0);
 
@@ -214,8 +216,8 @@ const CreateCampaign = ({
       return;
     }
 
-    if (planType === "kwanza" && (!videoLink || !selectedPlan)) {
-      toast.error("Por favor, insira o link do vídeo e selecione um plano");
+    if (planType === "kwanza" && (!videoLink || !selectedPlan || !videoTitle || !videoDuration)) {
+      toast.error("Por favor, preencha todos os campos do vídeo (Link, Título e Tempo)");
       return;
     }
 
@@ -233,22 +235,26 @@ const CreateCampaign = ({
       const {
         data: campaignId,
         error
-      } = await supabase.rpc('create_campaign_with_balance_v3' as any, {
+      } = await supabase.rpc('create_campaign_with_balance_v5' as any, {
         p_plan_type: planType === "limao" ? "ta_no_limao" : "kwanza",
         p_plan_name: selectedPlan?.name || "Custom Kwanza",
         p_platform: platform,
-        p_page_link: pageLink,
-        p_profile_link: profileLink || null,
-        p_video_link: videoLink || null,
-        p_video_id: vid || null,
-        p_duration: String(videoDuration || 60),
-        p_reward: String(rewardPerTask || selectedPlan?.reward || (planType === "kwanza" ? 200 : 100)),
-        p_total_budget: String(priceToDeduct)
+        p_page_link: planType === "limao" ? pageLink : videoLink,
+        p_target_count: selectedPlan?.count || 0,
+        p_price: priceToDeduct,
+        p_campaign_goal: campaignGoal,
+        p_video_title: videoTitle || null,
+        p_video_duration: videoDuration || null,
+        p_video_id: vid || null
       });
 
       if (error) throw error;
 
-      toast.success("Campanha activada com sucesso!");
+      if (planType === "kwanza") {
+        toast.success("Campanha enviada para revisão do Admin!");
+      } else {
+        toast.success("Campanha activada com sucesso!");
+      }
       onComplete();
     } catch (error: any) {
       toast.error(error.message || "Erro ao criar campanha");
@@ -349,11 +355,23 @@ const CreateCampaign = ({
           </p>
         </button>
 
-        {/* Plano Kwanza ocultado a pedido do utilizador */}
-        <div className="p-6 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center opacity-40 grayscale pointer-events-none">
-          <Youtube className="w-8 h-8 mb-2 text-muted-foreground" />
-          <p className="text-xs font-bold uppercase text-muted-foreground tracking-tighter">Indisponível</p>
-        </div>
+        <button
+          onClick={() => {
+            setPlanType("kwanza");
+            setPlatform("youtube");
+            setSelectedPlan(null);
+            setCampaignGoal("engagement");
+          }}
+          className={`p-6 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${planType === "kwanza" ? "border-gold bg-gold/10" : "border-border hover:border-gold/50"}`}
+        >
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${planType === "kwanza" ? "bg-gold text-gold-foreground" : "bg-muted text-muted-foreground"}`}>
+            <Youtube className="w-6 h-6" />
+          </div>
+          <h3 className="font-display font-black text-xs uppercase tracking-widest text-foreground">Pacote Kwanza</h3>
+          <p className="text-[10px] text-muted-foreground text-center leading-tight">
+            Aumente as visualizações e o engajamento dos seus vídeos do YouTube.
+          </p>
+        </button>
       </div>
 
       {planType && <div className="mt-8">
@@ -380,6 +398,43 @@ const CreateCampaign = ({
               {formatPrice(plan.price)}
             </div>
           </button>)}
+        </div>
+
+        <div className="mt-10 pt-10 border-t border-white/5">
+          <h3 className="font-display font-bold text-lg text-foreground mb-4 text-center">
+            O que pretende com esta campanha?
+          </h3>
+          <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+            <button
+              onClick={() => setCampaignGoal("followers")}
+              className={`p-5 rounded-xl border-2 transition-all text-left flex items-start gap-4 ${campaignGoal === "followers" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}
+            >
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${campaignGoal === "followers" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-foreground">Seguidores</h4>
+                <p className="text-[10px] text-muted-foreground leading-tight mt-1">
+                  Os trabalhadores irão seguir ou subscrever-se na sua página.
+                </p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setCampaignGoal("engagement")}
+              className={`p-5 rounded-xl border-2 transition-all text-left flex items-start gap-4 ${campaignGoal === "engagement" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}
+            >
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${campaignGoal === "engagement" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                <MessageCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-foreground">Reacção + Comentário</h4>
+                <p className="text-[10px] text-muted-foreground leading-tight mt-1">
+                  Os trabalhadores irão reagir (gostar) e deixar um comentário positivo.
+                </p>
+              </div>
+            </button>
+          </div>
         </div>
       </div>}
 
@@ -460,84 +515,64 @@ const CreateCampaign = ({
           </div>
 
           {planType === "kwanza" && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-2xl shadow-sm">
-                <label className="block text-sm font-bold text-red-500 mb-3 flex items-center gap-2">
-                  <Youtube className="w-4 h-4" />
-                  Configuração de Vídeo YouTube
-                </label>
-                <input
-                  type="url"
-                  value={videoLink}
-                  onChange={e => {
-                    setVideoLink(e.target.value);
-                    const vid = extractVideoId(e.target.value);
-                    if (vid) {
-                      setVideoId(vid);
-                      toast.success("Vídeo identificado!");
-                    }
-                  }}
-                  className="input-styled w-full border-gold/30 focus:border-gold bg-gold/5"
-                  required
-                  placeholder="https://www.youtube.com/watch?v=..."
-                />
-
-                {videoId && (
-                  <div className="mt-4 p-4 bg-black/40 rounded-xl border border-white/5 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase text-muted-foreground">ID do Vídeo:</span>
-                      <span className="text-[10px] font-mono text-red-500">{videoId}</span>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-muted-foreground">Duração em Segundos:</label>
-                      <input
-                        type="number"
-                        value={videoDuration}
-                        onChange={e => {
-                          const dur = parseInt(e.target.value);
-                          setVideoDuration(dur);
-                          setRewardPerTask(dur);
-                        }}
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none transition-all"
-                        placeholder="Ex: 120"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                      <span className="text-[10px] font-black uppercase text-muted-foreground">Recompensa (1:1):</span>
-                      <span className="text-sm font-black text-red-500">{videoDuration} Kz / visualização</span>
-                    </div>
-                  </div>
-                )}
+            <div className="space-y-6 mt-4 p-6 rounded-2xl bg-gold/5 border border-gold/10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="flex items-center gap-3">
+                <div className="w-1.5 h-6 bg-gold rounded-full shadow-neon" />
+                <h3 className="font-display font-bold text-lg text-foreground uppercase tracking-tight">Detalhes do Vídeo</h3>
               </div>
 
-              <div className="p-6 bg-primary/5 border border-primary/20 rounded-2xl">
-                <label className="block text-sm font-bold text-primary mb-3 flex items-center gap-2">
-                  <Wallet className="w-4 h-4" />
-                  Orçamento da Campanha
-                </label>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-muted-foreground block mb-2">Orçamento Total (Kz):</label>
+              <div className="grid gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Link do Vídeo YouTube</label>
+                  <div className="relative group">
+                    <input
+                      type="url"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      value={videoLink}
+                      onChange={(e) => setVideoLink(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 group-hover:border-gold/50 transition-all h-12 pl-10 rounded-xl outline-none focus:border-gold"
+                    />
+                    <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-gold transition-colors" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Título do Vídeo</label>
+                  <input
+                    placeholder="Insira o título conforme o YouTube"
+                    value={videoTitle}
+                    onChange={(e) => setVideoTitle(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 h-12 rounded-xl outline-none focus:border-gold px-4"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Tempo Total do Vídeo (segundos)</label>
+                  <div className="relative group">
                     <input
                       type="number"
-                      value={customBudget}
-                      onChange={e => {
-                        const budget = parseInt(e.target.value);
-                        setCustomBudget(budget);
-                        if (selectedPlan) setSelectedPlan({ ...selectedPlan, price: budget });
-                      }}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-lg font-bold text-white focus:border-primary outline-none"
-                      placeholder="Ex: 50000"
+                      placeholder="Ex: 120"
+                      value={videoDuration || ""}
+                      onChange={(e) => setVideoDuration(Number(e.target.value))}
+                      className="w-full bg-white/5 border border-white/10 group-hover:border-gold/50 transition-all h-12 pl-10 rounded-xl outline-none focus:border-gold"
                     />
+                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-gold transition-colors" />
                   </div>
-                  {videoDuration > 0 && customBudget > 0 && (
-                    <div className="p-3 bg-white/5 rounded-xl border border-white/5 flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase text-muted-foreground">Estimativa:</span>
-                      <span className="text-xs font-bold text-white">
-                        {Math.floor(customBudget / videoDuration)} Tarefas possíveis
-                      </span>
-                    </div>
-                  )}
+                  <p className="text-[9px] text-muted-foreground ml-1 italic">
+                    O tempo que o trabalhador precisará assistir será baseado neste valor.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-gold/10 border border-gold/20 p-4 rounded-xl flex items-start gap-4">
+                <div className="p-2 rounded-lg bg-gold/20">
+                  <ShieldCheck className="w-5 h-5 text-gold" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gold mb-1">Aprovação Necessária</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    As campanhas de vídeo requerem revisão administrativa. Após o seu pagamento ser confirmado, o administrador configurará a recompensa para os trabalhadores para activar a campanha.
+                  </p>
                 </div>
               </div>
             </div>
@@ -599,6 +634,10 @@ const CreateCampaign = ({
           <div className="flex justify-between items-center pb-4 border-b border-border">
             <span className="text-muted-foreground">Custo</span>
             <span className="font-bold text-gradient-gold">{formatPrice(selectedPlan?.price || 0)}</span>
+          </div>
+          <div className="flex justify-between items-center pb-4 border-b border-border">
+            <span className="text-muted-foreground">Objectivo</span>
+            <span className="font-bold text-primary">{campaignGoal === "followers" ? "Seguidores" : "Reacção + Comentário Positivo"}</span>
           </div>
           {planType === "kwanza" && (
             <div className="flex justify-between items-center pb-4 border-b border-border">

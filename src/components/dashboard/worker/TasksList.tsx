@@ -34,6 +34,7 @@ interface AvailableCampaign {
   target_count: number;
   completed_count: number;
   status: string;
+  campaign_goal?: "followers" | "engagement";
 }
 
 interface Task {
@@ -224,8 +225,12 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
       return;
     }
 
-    if (campaignPlanType === "kwanza") {
-      if (!proofs.like || !proofs.comment || !proofs.share) {
+    if (campaignPlanType === "kwanza" || (activeTask?.campaign?.plan_type === "ta_no_limao" && activeTask?.campaign?.campaign_goal === "engagement")) {
+      if (!proofs.like || !proofs.comment) {
+        toast.error("Os prints de seguir, gostar e comentar são obrigatórios para este objetivo");
+        return;
+      }
+      if (campaignPlanType === "kwanza" && !proofs.share) {
         toast.error("Todos os 4 prints são obrigatórios para o plano Kwanza");
         return;
       }
@@ -394,76 +399,107 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
         </h2>
 
         {availableCampaigns.length === 0 ? (
-          <div className="card-elevated p-6 text-center">
-            <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-display font-bold text-foreground mb-2">
-              Nenhuma tarefa disponível
+          <div className="card-elevated p-12 text-center bg-card/10 backdrop-blur-md border border-white/5 rounded-3xl">
+            <AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-6 opacity-20" />
+            <h3 className="font-display font-black text-2xl text-white mb-2 uppercase tracking-tighter">
+              Sem Tarefas no Radar
             </h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground max-w-[280px] mx-auto leading-relaxed">
               {hiddenByLinksCount > 0
-                ? "Vincule suas redes sociais nas configurações para ver mais tarefas."
-                : "Volte mais tarde para ver novas oportunidades de trabalho."}
+                ? "Vincule as suas redes sociais nas definições para desbloquear novas oportunidades."
+                : "A nossa equipa está a preparar novas missões para ti. Volta daqui a pouco!"}
             </p>
           </div>
         ) : (
           <div className="grid gap-6">
             {hiddenByLinksCount > 0 && (
-              <div className="bg-primary/10 border border-primary/20 p-4 rounded-xl flex items-center gap-3">
-                <AlertCircle className="w-5 h-5 text-primary" />
-                <p className="text-xs font-bold text-primary uppercase tracking-widest">
-                  Existem {hiddenByLinksCount} tarefas ocultas. Vincule mais redes sociais nas configurações para vê-las.
+              <div className="bg-primary/10 border border-primary/20 p-4 rounded-2xl flex items-center gap-3 backdrop-blur-sm animate-pulse-slow">
+                <ShieldCheck className="w-5 h-5 text-primary" />
+                <p className="text-[10px] font-black text-primary uppercase tracking-[0.1em]">
+                  {hiddenByLinksCount} missões ocultas! Conecta mais redes para lucrar mais.
                 </p>
               </div>
             )}
             {availableCampaigns.map((campaign) => {
               const remaining = campaign.target_count - campaign.completed_count;
+              const isYoutube = campaign.platform === "youtube";
+              const thumbnailUrl = isYoutube && campaign.video_id
+                ? `https://img.youtube.com/vi/${campaign.video_id}/mqdefault.jpg`
+                : null;
 
               return (
-                <div key={campaign.id} className="card-premium-glow p-6 group transition-all hover:scale-[1.01]">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
-                    <div className="flex items-start gap-4">
-                      <div className="w-16 h-16 rounded-2xl bg-card/40 border border-border flex items-center justify-center text-4xl group-hover:bg-primary/10 group-hover:border-primary/20 transition-all">
-                        {getPlatformEmoji(campaign.platform)}
-                      </div>
-                      <div>
-                        <h3 className="font-display font-bold text-xl text-white mb-1">
-                          {campaign.plan_type === "ta_no_limao" || campaign.plan_type === "limao" ? "Tá no Limão" : "Kwanza"} - {campaign.plan_name}
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                          <span className="px-2 py-0.5 rounded-md bg-card/40 border border-border font-bold uppercase tracking-widest text-[10px]">
-                            {campaign.platform}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Users className="w-3 h-3" />
-                            {remaining} vagas
-                          </span>
+                <div
+                  key={campaign.id}
+                  className="group relative overflow-hidden rounded-3xl bg-card border border-white/5 hover:border-primary/30 transition-all duration-500 hover:shadow-[0_0_40px_-15px_rgba(132,255,46,0.15)] hover:-translate-y-1"
+                >
+                  {/* Glassmorphism Background Decoration */}
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -mr-32 -mt-32 group-hover:bg-primary/10 transition-all duration-700" />
+
+                  <div className="flex flex-col md:flex-row gap-6 p-1 relative z-10">
+                    {/* Thumbnail/Icon Area */}
+                    <div className="w-full md:w-56 h-36 relative rounded-2xl overflow-hidden shrink-0 bg-black/40 border border-white/5 shadow-inner">
+                      {thumbnailUrl ? (
+                        <>
+                          <img
+                            src={thumbnailUrl}
+                            alt="Video Preview"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                          <div className="absolute bottom-2 left-2 bg-red-600/90 text-[8px] font-black text-white px-2 py-0.5 rounded-full uppercase tracking-tighter backdrop-blur-sm">
+                            Youtube View
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                          <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-3xl shadow-inner group-hover:bg-primary/20 transition-all">
+                            {getPlatformEmoji(campaign.platform)}
+                          </div>
+                          <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">{campaign.platform}</span>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {campaign.plan_type === "ta_no_limao" || campaign.plan_type === "limao"
-                            ? "Acção: Seguir a página"
-                            : campaign.platform === "youtube"
-                              ? "Tarefa: Assistir Vídeo + Engajamento"
-                              : "Interacção: Seguir + Gostar + Comentar + Partilhar"}
-                        </p>
+                      )}
+                    </div>
+
+                    {/* Content Area */}
+                    <div className="flex-1 flex flex-col py-3 px-5 md:px-0">
+                      <div className="flex items-start justify-between mb-auto">
+                        <div>
+                          <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-1">
+                            {campaign.plan_type === "ta_no_limao" ? "Missão Social" : "Missão YouTube"}
+                          </p>
+                          <h3 className="font-display font-black text-xl text-white tracking-tight leading-tight group-hover:text-primary transition-colors">
+                            {campaign.plan_name}
+                          </h3>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Recompensa</p>
+                          <p className="text-2xl font-black text-white tracking-tighter">
+                            {campaign.reward ? formatPrice(campaign.reward, profile?.country) : "---"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3 mt-4">
+                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+                          <Users className="w-3 h-3 text-primary" />
+                          {remaining} vagas disponíveis
+                        </div>
+                        <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-tighter">
+                          {campaign.campaign_goal === "engagement" ? "Gostar + Comentar" : "Subscrição Directa"}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Recompensa</p>
-                        <p className={`text-2xl font-black font-display ${campaign.platform === "youtube" ? "text-red-500" : "text-gold"}`}>
-                          {campaign.reward ? formatPrice(campaign.reward, profile?.country) : "Consultar"}
-                        </p>
-                      </div>
+
+                    {/* Action Area */}
+                    <div className="flex items-center p-4 md:p-6 md:border-l border-white/5">
                       <button
                         onClick={() => claimTask(campaign)}
-                        className="btn-gold min-w-[140px] px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-xs shadow-gold-premium hover:shadow-gold-premium/40 transition-all active:scale-95"
+                        className="w-full md:w-auto h-14 md:h-24 px-8 rounded-2xl bg-primary text-primary-foreground font-black uppercase tracking-[0.1em] text-xs shadow-neon hover:scale-105 active:scale-95 transition-all duration-300 md:[writing-mode:vertical-lr] md:rotate-180 flex items-center justify-center"
                       >
-                        Trabalhar
+                        Começar Agora
                       </button>
                     </div>
                   </div>
-                  {/* Background decoration */}
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/10 transition-all" />
                 </div>
               );
             })}
@@ -552,43 +588,57 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
               <div className="p-6 space-y-6">
                 {!showProofForm ? (
                   <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="bg-primary/10 border border-primary/20 p-6 rounded-2xl text-center">
-                      <h4 className="text-lg font-bold text-foreground mb-2">Paso 1: Siga o Link</h4>
-                      <p className="text-sm text-muted-foreground mb-6">
-                        Para concluir esta tarefa, você deve obrigatoriamente seguir o link abaixo e realizar a ação solicitada.
-                      </p>
-                      <a
-                        href={activeTask.campaign?.page_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => setHasOpenedLink(true)}
-                        className="btn-primary inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold uppercase tracking-widest text-sm shadow-neon group"
-                      >
-                        ABRIR MISSÃO <ExternalLink className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                      </a>
-                    </div>
-
-                    <div className="bg-card/40 border border-border p-5 rounded-2xl flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
-                          <AlertCircle className="w-5 h-5 text-primary" />
-                        </div>
-                        <div className="text-left">
-                          <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Dica Importante</p>
-                          <p className="text-xs text-muted-foreground leading-tight">
-                            Tire prints da conclusão da tarefa para enviar no próximo passo.
+                    {activeTask.campaign?.plan_type === "kwanza" ? (
+                      <YouTubeTaskPlayer
+                        campaign={activeTask.campaign}
+                        taskId={activeTask.id}
+                        userId={user.id}
+                        onComplete={() => {
+                          setOpenTaskId(null);
+                          loadTasks();
+                        }}
+                      />
+                    ) : (
+                      <>
+                        <div className="bg-primary/10 border border-primary/20 p-6 rounded-2xl text-center">
+                          <h4 className="text-lg font-bold text-foreground mb-2">Paso 1: Siga o Link</h4>
+                          <p className="text-sm text-muted-foreground mb-6">
+                            Para concluir esta tarefa, você deve obrigatoriamente seguir o link abaixo e realizar a ação solicitada.
                           </p>
+                          <a
+                            href={activeTask.campaign?.page_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setHasOpenedLink(true)}
+                            className="btn-primary inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold uppercase tracking-widest text-sm shadow-neon group"
+                          >
+                            ABRIR MISSÃO <ExternalLink className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                          </a>
                         </div>
-                      </div>
-                    </div>
 
-                    <button
-                      onClick={() => setShowProofForm(true)}
-                      disabled={!hasOpenedLink}
-                      className="btn-gold w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-gold-premium disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {hasOpenedLink ? "JÁ SEGUI / CONCLUÍ" : "SIGA O LINK PRIMEIRO"}
-                    </button>
+                        <div className="bg-card/40 border border-border p-5 rounded-2xl flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+                              <AlertCircle className="w-5 h-5 text-primary" />
+                            </div>
+                            <div className="text-left">
+                              <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Dica Importante</p>
+                              <p className="text-xs text-muted-foreground leading-tight">
+                                Tire prints da conclusão da tarefa para enviar no próximo passo.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => setShowProofForm(true)}
+                          disabled={!hasOpenedLink}
+                          className="btn-gold w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-gold-premium disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {hasOpenedLink ? "JÁ SEGUI / CONCLUÍ" : "SIGA O LINK PRIMEIRO"}
+                        </button>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
@@ -639,13 +689,13 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                             onChange={(url) => setProofs({ ...proofs, follow: url })}
                           />
 
-                          {(activeTask.campaign?.plan_type === "kwanza" || (activeTask.campaign?.plan_type !== "ta_no_limao" && activeTask.campaign?.plan_type !== "limao")) && (
+                          {(activeTask.campaign?.plan_type === "kwanza" || activeTask.campaign?.campaign_goal === "engagement" || (activeTask.campaign?.plan_type !== "ta_no_limao" && activeTask.campaign?.plan_type !== "limao")) && (
                             <div className="grid grid-cols-1 gap-4">
                               <FileUpload
                                 userId={user.id}
                                 taskId={activeTask.id}
                                 proofType="like"
-                                label="Print de Gostar"
+                                label="Print de Gostar (Reacção)"
                                 required
                                 value={proofs.like}
                                 onChange={(url) => setProofs({ ...proofs, like: url })}
@@ -654,20 +704,22 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                                 userId={user.id}
                                 taskId={activeTask.id}
                                 proofType="comment"
-                                label="Print de Comentar"
+                                label="Print de Comentário Positivo"
                                 required
                                 value={proofs.comment}
                                 onChange={(url) => setProofs({ ...proofs, comment: url })}
                               />
-                              <FileUpload
-                                userId={user.id}
-                                taskId={activeTask.id}
-                                proofType="share"
-                                label="Print de Partilhar"
-                                required
-                                value={proofs.share}
-                                onChange={(url) => setProofs({ ...proofs, share: url })}
-                              />
+                              {(activeTask.campaign?.plan_type === "kwanza" || (activeTask.campaign?.plan_type !== "ta_no_limao" && activeTask.campaign?.plan_type !== "limao")) && (
+                                <FileUpload
+                                  userId={user.id}
+                                  taskId={activeTask.id}
+                                  proofType="share"
+                                  label="Print de Partilhar"
+                                  required
+                                  value={proofs.share}
+                                  onChange={(url) => setProofs({ ...proofs, share: url })}
+                                />
+                              )}
                             </div>
                           )}
 

@@ -18,7 +18,8 @@ import {
   Settings,
   PlusCircle,
   MessageSquare,
-  UserPlus
+  UserPlus,
+  Youtube
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AdminSidebar from "@/components/admin/AdminSidebar";
@@ -47,6 +48,7 @@ interface DashboardStats {
   totalRevenue: number;
   pendingDeposits: number;
   pendingKyc: number;
+  pendingYoutube: number;
   totalReferrals: number;
   totalCommissionsPaid: number;
 }
@@ -69,6 +71,7 @@ const Admin = () => {
     totalRevenue: 0,
     pendingDeposits: 0,
     pendingKyc: 0,
+    pendingYoutube: 0,
     totalReferrals: 0,
     totalCommissionsPaid: 0
   });
@@ -159,6 +162,7 @@ const Admin = () => {
     let tasksCount = 0;
     let withdrawalsCount = 0;
     let usersCount = 0;
+    let youtubeCount = 0;
     try {
       // Load pending payments (campaigns with pending_payment status)
       const { data: campaignsData, error: campaignsError } = await supabase
@@ -281,6 +285,18 @@ const Admin = () => {
     }
 
     try {
+      // Load pending youtube setup
+      const { count: pendingYoutubeCount } = await supabase
+        .from("campaigns")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending_admin_setup");
+
+      youtubeCount = pendingYoutubeCount || 0;
+    } catch (err) {
+      console.error("Error loading pending youtube:", err);
+    }
+
+    try {
       // Calculate stats
       const { count: activeCampaignsCount } = await supabase
         .from("campaigns")
@@ -356,6 +372,7 @@ const Admin = () => {
         totalRevenue: Math.max(0, finalRevenue),
         pendingDeposits: pendingDepositsCount || 0,
         pendingKyc: (kycData as any[])?.filter((k: any) => k.status === 'pending').length || 0,
+        pendingYoutube: youtubeCount,
         totalReferrals: referralStatsData?.total_referrals || 0,
         totalCommissionsPaid: totalCommissions
       });
@@ -511,6 +528,12 @@ const Admin = () => {
               value={stats.pendingDeposits}
               icon={PlusCircle}
               variant={stats.pendingDeposits > 0 ? "warning" : "default"}
+            />
+            <StatsCard
+              title="YouTube Setup"
+              value={stats.pendingYoutube}
+              icon={Youtube}
+              variant={stats.pendingYoutube > 0 ? "warning" : "default"}
             />
             <StatsCard
               title="Ecossistema / Usuários"

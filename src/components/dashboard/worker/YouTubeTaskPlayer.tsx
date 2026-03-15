@@ -16,9 +16,39 @@ const YouTubeTaskPlayer = ({ campaign, taskId, userId, onComplete }: YouTubeTask
     const [isPlaying, setIsPlaying] = useState(false);
     const [isValidating, setIsValidating] = useState(false);
     const [isSubscribed, setIsSubscribed] = useState(false);
+    const [workerProfile, setWorkerProfile] = useState<any>(null);
+    const [loadingProfile, setLoadingProfile] = useState(true);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('youtube_link, full_name')
+                    .eq('user_id', userId)
+                    .single();
+
+                if (error) throw error;
+                setWorkerProfile(data);
+            } catch (err) {
+                console.error("Error fetching profile:", err);
+            } finally {
+                setLoadingProfile(false);
+            }
+        };
+
+        fetchProfile();
+    }, [userId]);
+
+    const isHabilitated = !!workerProfile?.youtube_link;
+    const channelName = workerProfile?.youtube_link?.split('/').pop() || workerProfile?.full_name;
 
     const requiredTime = Math.min(Math.floor((campaign.duration || 60) * 0.7), 300);
     const progress = Math.min((elapsedTime / requiredTime) * 100, 100);
+
+    // 60s = 10kz rule -> 0.1666... kz/sec
+    const rewardPerSecond = campaign.reward_per_second || (10 / 60);
+    const currentEarnings = (elapsedTime * rewardPerSecond).toFixed(2);
 
     const playerRef = useRef<any>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -41,7 +71,7 @@ const YouTubeTaskPlayer = ({ campaign, taskId, userId, onComplete }: YouTubeTask
         });
 
         if (error) {
-            toast.error("Erro ao iniciar sessão de vídeo");
+            toast.error(error.message || "Erro ao iniciar sessão de vídeo");
             return;
         }
 
@@ -94,12 +124,44 @@ const YouTubeTaskPlayer = ({ campaign, taskId, userId, onComplete }: YouTubeTask
 
     return (
         <div className="space-y-6">
+            {!loadingProfile && (
+                <div className={`p-4 rounded-2xl border flex items-center gap-4 transition-all duration-700 animate-in fade-in slide-in-from-top-4 ${isHabilitated ? 'bg-green-500/10 border-green-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
+                    <div className={`p-3 rounded-xl ${isHabilitated ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+                        <Youtube className={`w-5 h-5 ${isHabilitated ? 'text-green-500' : 'text-red-500'}`} />
+                    </div>
+                    <div className="flex-1">
+                        {isHabilitated ? (
+                            <>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-green-500 mb-0.5">Parabéns! Estás habilitado</p>
+                                <p className="text-xs text-white font-bold">Canal: <span className="text-primary italic">{channelName}</span></p>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-0.5">Conta YouTube necessária</p>
+                                <p className="text-xs text-muted-foreground leading-tight">Precisas de ter uma conta YouTube activa no teu perfil para fazer esta tarefa.</p>
+                            </>
+                        )}
+                    </div>
+                    {isHabilitated && <CheckCircle className="w-6 h-6 text-green-500 animate-pulse" />}
+                </div>
+            )}
+
             <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl">
+                {!isHabilitated && !loadingProfile && (
+                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md">
+                        <div className="text-center p-8">
+                            <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                            <h3 className="text-white font-bold mb-2 text-lg">Acesso Restrito</h3>
+                            <p className="text-muted-foreground text-xs max-w-[200px] mx-auto">Vincula o teu canal do YouTube nas definições para desbloquear esta tarefa.</p>
+                        </div>
+                    </div>
+                )}
                 {!isPlaying && elapsedTime === 0 ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-10">
                         <button
-                            onClick={() => setIsPlaying(true)}
-                            className="w-20 h-20 rounded-full bg-primary flex items-center justify-center hover:scale-110 transition-transform shadow-neon"
+                            onClick={() => isHabilitated && setIsPlaying(true)}
+                            disabled={!isHabilitated}
+                            className="w-20 h-20 rounded-full bg-primary flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-neon disabled:opacity-50 disabled:grayscale"
                         >
                             <Play className="w-10 h-10 text-white fill-current" />
                         </button>
@@ -115,22 +177,33 @@ const YouTubeTaskPlayer = ({ campaign, taskId, userId, onComplete }: YouTubeTask
                 )}
             </div>
 
-            <div className="space-y-4">
-                <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                    <span className="text-muted-foreground flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        Tempo Assistido: {elapsedTime}s / {requiredTime}s
-                    </span>
-                    <span className={elapsedTime >= requiredTime ? "text-primary" : "text-gold"}>
-                        {Math.floor(progress)}% Concluído
-                    </span>
-                </div>
+            <div className="bg-card/40 border border-border p-6 rounded-2xl relative overflow-hidden group">
+                <div className="absolute top-0 left-0 h-1 bg-primary/20 w-full" />
+                <div
+                    className="absolute top-0 left-0 h-1 bg-primary shadow-neon transition-all duration-1000 whitespace-nowrap"
+                    style={{ width: `${progress}%` }}
+                />
 
-                <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                    <div
-                        className="h-full bg-gradient-to-r from-primary to-blue-500 transition-all duration-1000"
-                        style={{ width: `${progress}%` }}
-                    />
+                <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-1">Ganhos em Tempo Real</p>
+                        <div className="flex items-baseline gap-1">
+                            <span className={`text-4xl font-black text-white tabular-nums tracking-tighter ${isPlaying ? 'animate-pulse text-green-400' : ''}`}>
+                                {currentEarnings}
+                            </span>
+                            <span className="text-sm font-bold text-muted-foreground uppercase italic">Kz</span>
+                        </div>
+                    </div>
+
+                    <div className="text-right">
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Tempo de Antena</p>
+                        <div className="flex items-center justify-end gap-2">
+                            <span className="text-xl font-mono font-bold text-white whitespace-nowrap">
+                                {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}
+                            </span>
+                            <Clock className={`w-4 h-4 ${isPlaying ? 'text-primary animate-spin' : 'text-muted-foreground'}`} style={{ animationDuration: '3s' }} />
+                        </div>
+                    </div>
                 </div>
             </div>
 
