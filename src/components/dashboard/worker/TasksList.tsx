@@ -35,6 +35,8 @@ interface AvailableCampaign {
   completed_count: number;
   status: string;
   campaign_goal?: "followers" | "engagement";
+  description?: string;
+  reward_amount_override?: number;
 }
 
 interface Task {
@@ -49,6 +51,7 @@ interface Task {
   like_proof_url: string | null;
   comment_proof_url: string | null;
   share_proof_url: string | null;
+  submission_link: string | null;
   scheduled_deletion_at?: string | null;
   campaign?: AvailableCampaign;
 }
@@ -113,6 +116,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
   const availableCampaigns = campaigns
     .filter(campaign => !myTasks.some(t => t.campaign_id === campaign.id))
     .filter(campaign => {
+      if (campaign.platform === 'diverse') return true;
       const link = profile?.[`${campaign.platform}_link`];
       return link && link.trim() !== "";
     });
@@ -120,6 +124,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
   const hiddenByLinksCount = campaigns
     .filter(campaign => !myTasks.some(t => t.campaign_id === campaign.id))
     .filter(campaign => {
+      if (campaign.platform === 'diverse') return false;
       const link = profile?.[`${campaign.platform}_link`];
       return !link || link.trim() === "";
     }).length;
@@ -171,10 +176,12 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
       }
 
       // Check if worker has the required social link
-      const platformLink = profile?.[`${campaign.platform}_link`];
-      if (!platformLink) {
-        toast.error(`Você precisa vincular seu ${campaign.platform} nas configurações antes de aceitar esta tarefa.`);
-        return;
+      if (campaign.platform !== 'diverse') {
+        const platformLink = profile?.[`${campaign.platform}_link`];
+        if (!platformLink) {
+          toast.error(`Você precisa vincular seu ${campaign.platform} nas configurações antes de aceitar esta tarefa.`);
+          return;
+        }
       }
 
       // Use secure RPC function to claim task
@@ -243,15 +250,22 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
 
     setUploading(true);
     try {
+      const isDiverse = activeTask?.campaign?.platform === 'diverse';
+
+      if (isDiverse && !proofs.follow) { // Note: for diverse, 'follow' input is repurposed as 'link' in some UIs or we use submission_link
+        // I will use a dedicated field below or repurpose one
+      }
+
       const { error } = await supabase
         .from("tasks")
         .update({
           status: "pending_review",
           completed_at: new Date().toISOString(),
-          follow_proof_url: proofs.follow,
-          like_proof_url: proofs.like || null,
-          comment_proof_url: proofs.comment || null,
-          share_proof_url: proofs.share || null,
+          follow_proof_url: isDiverse ? null : proofs.follow,
+          like_proof_url: isDiverse ? null : proofs.like || null,
+          comment_proof_url: isDiverse ? null : proofs.comment || null,
+          share_proof_url: isDiverse ? null : proofs.share || null,
+          submission_link: isDiverse ? proofs.follow : null, // repurposing proofs.follow as the link for diverse
         })
         .eq("id", taskId)
         .eq("worker_id", user.id);
@@ -277,6 +291,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
       case "instagram": return "📸";
       case "tiktok": return "🎵";
       case "youtube": return "🎬";
+      case "diverse": return "🌟";
       default: return "📱";
     }
   };
@@ -423,6 +438,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
             {availableCampaigns.map((campaign) => {
               const remaining = campaign.target_count - campaign.completed_count;
               const isYoutube = campaign.platform === "youtube";
+              const isDiverse = campaign.platform === "diverse";
               const thumbnailUrl = isYoutube && campaign.video_id
                 ? `https://img.youtube.com/vi/${campaign.video_id}/mqdefault.jpg`
                 : null;
@@ -465,7 +481,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                       <div className="flex items-start justify-between mb-auto">
                         <div>
                           <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-1">
-                            {campaign.plan_type === "ta_no_limao" ? "Missão Social" : "Missão YouTube"}
+                            {isDiverse ? "Missão Especial" : (campaign.plan_type === "ta_no_limao" ? "Missão Social" : "Missão YouTube")}
                           </p>
                           <h3 className="font-display font-black text-xl text-white tracking-tight leading-tight group-hover:text-primary transition-colors">
                             {campaign.plan_name}
@@ -474,7 +490,9 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                         <div className="text-right">
                           <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Recompensa</p>
                           <p className="text-2xl font-black text-white tracking-tighter">
-                            {campaign.reward ? formatPrice(campaign.reward, profile?.country) : "---"}
+                            {isDiverse && campaign.reward_amount_override
+                              ? formatPrice(campaign.reward_amount_override, profile?.country)
+                              : (campaign.reward ? formatPrice(campaign.reward, profile?.country) : "---")}
                           </p>
                         </div>
                       </div>
@@ -485,7 +503,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                           {remaining} vagas disponíveis
                         </div>
                         <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-tighter">
-                          {campaign.campaign_goal === "engagement" ? "Gostar + Comentar" : "Subscrição Directa"}
+                          {isDiverse ? "Missão Manual" : (campaign.campaign_goal === "engagement" ? "Gostar + Comentar" : "Subscrição Directa")}
                         </div>
                       </div>
                     </div>
@@ -588,7 +606,32 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
               <div className="p-6 space-y-6">
                 {!showProofForm ? (
                   <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    {activeTask.campaign?.plan_type === "kwanza" ? (
+                    {activeTask.campaign?.platform === 'diverse' ? (
+                      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="bg-primary/5 border border-primary/20 p-6 rounded-2xl">
+                          <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                            <FileText className="w-4 h-4" />
+                            Instruções da Missão
+                          </h4>
+                          <div className="text-foreground text-sm leading-relaxed whitespace-pre-wrap font-medium">
+                            {activeTask.campaign?.description}
+                          </div>
+                        </div>
+
+                        <div className="bg-card/40 border border-border p-5 rounded-2xl">
+                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">O teu progresso</p>
+                          <p className="text-xs text-muted-foreground mb-4">
+                            Depois de realizares o que foi pedido acima, cola o link do post ou vídeo como prova.
+                          </p>
+                          <button
+                            onClick={() => setHasOpenedLink(true)} // In diverse, opening the "Mission" is just reading it
+                            className="btn-primary w-full py-4 rounded-xl font-black uppercase tracking-widest text-xs shadow-neon active:scale-95 transition-all"
+                          >
+                            Entendi, vou realizar a tarefa!
+                          </button>
+                        </div>
+                      </div>
+                    ) : activeTask.campaign?.plan_type === "kwanza" ? (
                       <YouTubeTaskPlayer
                         campaign={activeTask.campaign}
                         taskId={activeTask.id}
@@ -664,7 +707,22 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                     </div>
 
                     <div className="space-y-4">
-                      {activeTask.campaign?.platform === "youtube" && activeTask.campaign?.video_id ? (
+                      {activeTask.campaign?.platform === "diverse" ? (
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest ml-1">Link do Post/Vídeo (Prova)</label>
+                            <Input
+                              value={proofs.follow}
+                              onChange={(e) => setProofs({ ...proofs, follow: e.target.value })}
+                              placeholder="https://sua-rede-social.com/post/..."
+                              className="bg-white/5 border-white/10 h-14 text-sm text-white focus:border-primary rounded-2xl"
+                            />
+                            <p className="text-[10px] text-muted-foreground italic ml-1">
+                              O Admin irá verificar manualmente o link enviado.
+                            </p>
+                          </div>
+                        </div>
+                      ) : activeTask.campaign?.platform === "youtube" && activeTask.campaign?.video_id ? (
                         <YouTubeTaskPlayer
                           campaign={activeTask.campaign}
                           taskId={activeTask.id}
@@ -740,7 +798,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
 
                           <button
                             onClick={() => submitProofs(activeTask.id, activeTask.campaign?.plan_type || "ta_no_limao")}
-                            disabled={uploading || !confirmAccount || !proofs.follow}
+                            disabled={uploading || !confirmAccount || (activeTask.campaign?.platform === 'diverse' ? !proofs.follow : !proofs.follow)}
                             className="btn-primary w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-neon disabled:opacity-30 disabled:cursor-not-allowed group transition-all"
                           >
                             {uploading ? (
