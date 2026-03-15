@@ -104,7 +104,7 @@ const Plans = () => {
                 </div>
 
                 <Link
-                  to="/auth?type=client"
+                  to="/auth?type=client&signup=true"
                   className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center ${plan.premium
                     ? "bg-yellow-500 text-yellow-950 hover:bg-yellow-400"
                     : plan.popular

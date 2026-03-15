@@ -64,11 +64,11 @@ const Hero = () => {
             transition={{ duration: 0.8, delay: 0.6 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-20"
           >
-            <Link to="/auth?type=client" className="btn-premium w-full sm:w-auto h-16 flex items-center justify-center gap-3">
+            <Link to="/auth?type=client&signup=true" className="btn-premium w-full sm:w-auto h-16 flex items-center justify-center gap-3">
               <TrendingUp className="w-6 h-6" />
               Criar Minha Campanha
             </Link>
-            <Link to="/auth?type=worker" className="btn-outline-premium w-full sm:w-auto h-16 flex items-center justify-center gap-3 group">
+            <Link to="/auth?type=worker&signup=true" className="btn-outline-premium w-full sm:w-auto h-16 flex items-center justify-center gap-3 group">
               <Users className="w-6 h-6 transition-colors group-hover:text-primary" />
               Trabalhar e Ganhar
             </Link>

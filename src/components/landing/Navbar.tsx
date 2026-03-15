@@ -46,10 +46,10 @@ const Navbar = () => {
             <a href="#simulador" className="nav-link">
               Simulador
             </a>
-            <Link to="/auth?type=client" className="nav-link">
+            <Link to="/auth?type=client&signup=true" className="nav-link">
               Quero ser cliente
             </Link>
-            <Link to="/auth?type=worker" className="nav-link">
+            <Link to="/auth?type=worker&signup=true" className="nav-link">
               Quero ser trabalhador
             </Link>
           </div>
@@ -107,14 +107,14 @@ const Navbar = () => {
                   Simulador
                 </a>
                 <Link
-                  to="/auth?type=client"
+                  to="/auth?type=client&signup=true"
                   onClick={() => setIsOpen(false)}
                   className="px-4 py-3 text-lg font-medium hover:bg-card/60 rounded-xl transition-colors"
                 >
                   Quero ser cliente
                 </Link>
                 <Link
-                  to="/auth?type=worker"
+                  to="/auth?type=worker&signup=true"
                   onClick={() => setIsOpen(false)}
                   className="px-4 py-3 text-lg font-medium hover:bg-card/60 rounded-xl transition-colors"
                 >

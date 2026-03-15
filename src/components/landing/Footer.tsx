@@ -54,8 +54,8 @@ const Footer = () => {
             <ul className="space-y-4">
               {[
                 { label: "Planos", path: "/#planos" },
-                { label: "Quero ser cliente", path: "/auth?type=client" },
-                { label: "Quero ser trabalhador", path: "/auth?type=worker" },
+                { label: "Quero ser cliente", path: "/auth?type=client&signup=true" },
+                { label: "Quero ser trabalhador", path: "/auth?type=worker&signup=true" },
                 { label: "Simulador", path: "/#simulador" }
               ].map((item) => (
                 <li key={item.label}>

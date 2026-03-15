@@ -119,7 +119,7 @@ const BusinessPromotion = () => {
                             transition={{ delay: 0.5 }}
                             className="pt-4"
                         >
-                            <Link to="/auth?type=client" className="btn-primary px-8 py-4 rounded-xl flex items-center justify-center gap-3 w-full sm:w-auto group">
+                            <Link to="/auth?type=client&signup=true" className="btn-primary px-8 py-4 rounded-xl flex items-center justify-center gap-3 w-full sm:w-auto group">
                                 <span className="font-black uppercase tracking-widest text-sm">Criar Minha Campanha de Vídeo</span>
                                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </Link>
