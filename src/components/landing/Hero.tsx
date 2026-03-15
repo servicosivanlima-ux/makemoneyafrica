@@ -54,7 +54,7 @@ const Hero = () => {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="text-lg sm:text-xl md:text-2xl text-muted-foreground/90 max-w-3xl mx-auto mb-12 leading-relaxed font-medium"
           >
-            A nova era do marketing digital em Angola. Potencie o seu perfil ou transforme o seu tempo livre em rendimento real com pagamentos comprovados em <span className="text-primary font-black">Kwanza (AOA)</span>.
+            A nova era do marketing digital em Angola. <span className="text-white font-bold">Promova o seu negócio com vídeos reais</span> ou transforme o seu tempo livre em rendimento com pagamentos em <span className="text-primary font-black">Kwanza (AOA)</span>.
           </motion.p>
 
           {/* CTA Group */}

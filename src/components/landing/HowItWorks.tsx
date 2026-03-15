@@ -24,13 +24,13 @@ const HowItWorks = () => {
   const clientSteps = [
     {
       icon: FileText,
-      title: "1. Escolha o Plano",
-      description: "Selecione entre pacotes de seguidores ou engajamento completo em AOA.",
+      title: "1. Escolha a Missão",
+      description: "Selecione entre seguidores, engajamento ou vídeos promocionais de pessoas reais.",
     },
     {
       icon: Target,
-      title: "2. Configure a Campanha",
-      description: "Insira os links e defina seu público-alvo em poucos cliques.",
+      title: "2. Defina o Guião",
+      description: "Diga o que as pessoas devem dizer ou fazer no vídeo para promover o seu negócio.",
     },
     {
       icon: CreditCard,
