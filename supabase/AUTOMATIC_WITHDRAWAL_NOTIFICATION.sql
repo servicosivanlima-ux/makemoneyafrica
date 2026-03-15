@@ -6,7 +6,7 @@ DECLARE
   v_withdrawn_amount INTEGER;
   v_current_balance INTEGER;
   v_previous_balance INTEGER;
-  v_min_withdrawal INTEGER := 1000;
+  v_min_withdrawal INTEGER := 500;
 BEGIN
   -- Only trigger when a task is approved
   IF (TG_OP = 'UPDATE' AND NEW.status = 'approved' AND OLD.status != 'approved') THEN

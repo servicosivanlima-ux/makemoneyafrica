@@ -225,6 +225,13 @@ I've significantly improved the worker experience by streamlining the task compl
 
 ---
 
+### Backend (Banco de Dados)
+- **Arquivo**: [AUTOMATIC_WITHDRAWAL_NOTIFICATION.sql](file:///c:/Users/Ivan%20Lima/Documents/makemoneyafrica/supabase/AUTOMATIC_WITHDRAWAL_NOTIFICATION.sql)
+- **Mudança**: Atualizada a variável `v_min_withdrawal` de `1000` para `500` na função `check_worker_withdrawal_availability`.
+- **Status**: **Aplicado pelo usuário no console do Supabase.** ✅
+
+---
+
 ### Correção de Indicação (Referral)
 - **Arquivo**: [Auth.tsx](file:///c:/Users/Ivan%20Lima/Documents/makemoneyafrica/src/pages/Auth.tsx)
 - Melhorado o tratamento de erros na validação de e-mail de indicação. Agora, falhas técnicas não serão mais mascaradas como "indicador não é trabalhador".
