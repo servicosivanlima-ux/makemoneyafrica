@@ -18,11 +18,7 @@ DECLARE
     v_is_admin BOOLEAN;
 BEGIN
     -- Security check: only admins
-    SELECT (role = 'admin') INTO v_is_admin 
-    FROM public.profiles 
-    WHERE user_id = auth.uid();
-
-    IF NOT v_is_admin THEN
+    IF NOT public.has_role(auth.uid(), 'admin'::public.app_role) THEN
         RAISE EXCEPTION 'Acesso negado. Apenas administradores podem editar campanhas.';
     END IF;
 
