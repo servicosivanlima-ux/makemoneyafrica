@@ -32,6 +32,7 @@ interface Campaign {
     reward_amount_override?: number;
     target_count?: number;
     plan_type?: string;
+    campaign_goal?: string;
 }
 
 const CampaignsTable = () => {
@@ -57,7 +58,8 @@ const CampaignsTable = () => {
         description: "",
         reward_amount_override: 0,
         target_count: 0,
-        status: ""
+        status: "",
+        campaign_goal: ""
     });
 
     // Diverse Task Creation State
@@ -187,6 +189,7 @@ const CampaignsTable = () => {
                         reward_amount_override: editForm.reward_amount_override,
                         target_count: editForm.target_count,
                         status: editForm.status,
+                        campaign_goal: editForm.campaign_goal,
                         updated_at: new Date().toISOString()
                     } as any)
                     .eq("id", editingCampaign.id);
@@ -382,7 +385,8 @@ const CampaignsTable = () => {
                                                         description: (campaign as any).description || "",
                                                         reward_amount_override: (campaign as any).reward_amount_override || 0,
                                                         target_count: campaign.target_count || 0,
-                                                        status: campaign.status || "active"
+                                                        status: campaign.status,
+                                                        campaign_goal: campaign.campaign_goal || "followers"
                                                     });
                                                     setIsEditDialogOpen(true);
                                                 }}
@@ -590,6 +594,18 @@ const CampaignsTable = () => {
                                                     onChange={(e) => setEditForm({ ...editForm, video_duration: parseInt(e.target.value) || 0 })}
                                                     className="bg-white/5 border-white/10"
                                                 />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest ml-1">Objectivo da Campanha</label>
+                                                <select
+                                                    value={editForm.campaign_goal}
+                                                    onChange={(e) => setEditForm({ ...editForm, campaign_goal: e.target.value })}
+                                                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-primary transition-colors"
+                                                >
+                                                    <option value="followers" className="bg-zinc-900">Seguidores</option>
+                                                    <option value="engagement" className="bg-zinc-900">Engajamento (Reaction + Comment)</option>
+                                                    <option value="message" className="bg-zinc-900">Seguir + Mensagem</option>
+                                                </select>
                                             </div>
                                         </>
                                     )}

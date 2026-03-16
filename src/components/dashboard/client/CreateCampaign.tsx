@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Check, Zap, Star, Youtube, MessageCircle, Clock, AlertTriangle, Copy, Upload, Loader2, Wallet, ShieldCheck, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Zap, Star, Youtube, MessageCircle, Clock, AlertTriangle, Copy, Upload, Loader2, Wallet, ShieldCheck, Users, Smartphone } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import FileUpload from "../common/FileUpload";
 import { formatPrice as displayPrice } from "@/lib/currency-utils";
