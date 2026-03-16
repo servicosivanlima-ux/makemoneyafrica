@@ -28,6 +28,10 @@ interface Campaign {
     video_duration?: number;
     video_link?: string;
     video_id?: string;
+    description?: string;
+    reward_amount_override?: number;
+    target_count?: number;
+    plan_type?: string;
 }
 
 const CampaignsTable = () => {
@@ -47,7 +51,13 @@ const CampaignsTable = () => {
         page_link: "",
         video_link: "",
         video_title: "",
-        video_duration: 0
+        video_duration: 0,
+        // Diverse task fields
+        plan_name: "",
+        description: "",
+        reward_amount_override: 0,
+        target_count: 0,
+        status: ""
     });
 
     // Diverse Task Creation State
@@ -165,25 +175,44 @@ const CampaignsTable = () => {
 
         setProcessing(editingCampaign.id);
         try {
-            const extractVideoId = (url: string) => {
-                const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-                const match = url.match(regExp);
-                return (match && match[7].length === 11) ? match[7] : null;
-            };
+            const isDiverse = editingCampaign.platform === 'diverse';
 
-            const vid = editForm.video_link ? extractVideoId(editForm.video_link) : null;
+            if (isDiverse) {
+                // Direct update for diverse tasks
+                const { error } = await supabase
+                    .from("campaigns" as any)
+                    .update({
+                        plan_name: editForm.plan_name,
+                        description: editForm.description,
+                        reward_amount_override: editForm.reward_amount_override,
+                        target_count: editForm.target_count,
+                        status: editForm.status,
+                        updated_at: new Date().toISOString()
+                    } as any)
+                    .eq("id", editingCampaign.id);
 
-            const { data, error } = await (supabase.rpc as any)('admin_update_campaign', {
-                p_campaign_id: editingCampaign.id,
-                p_page_link: editForm.page_link,
-                p_video_link: editForm.video_link || null,
-                p_video_title: editForm.video_title || null,
-                p_video_duration: editForm.video_duration || null,
-                p_video_id: vid
-            });
+                if (error) throw error;
+            } else {
+                const extractVideoId = (url: string) => {
+                    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+                    const match = url.match(regExp);
+                    return (match && match[7].length === 11) ? match[7] : null;
+                };
 
-            if (error) throw error;
-            if (!data) throw new Error("Não foi possível atualizar a campanha");
+                const vid = editForm.video_link ? extractVideoId(editForm.video_link) : null;
+
+                const { data, error } = await (supabase.rpc as any)('admin_update_campaign', {
+                    p_campaign_id: editingCampaign.id,
+                    p_page_link: editForm.page_link,
+                    p_video_link: editForm.video_link || null,
+                    p_video_title: editForm.video_title || null,
+                    p_video_duration: editForm.video_duration || null,
+                    p_video_id: vid
+                });
+
+                if (error) throw error;
+                if (!data) throw new Error("Não foi possível atualizar a campanha");
+            }
 
             toast.success("Campanha atualizada com sucesso!");
             setIsEditDialogOpen(false);
@@ -348,7 +377,12 @@ const CampaignsTable = () => {
                                                         page_link: campaign.page_link,
                                                         video_link: campaign.video_link || "",
                                                         video_title: campaign.video_title || "",
-                                                        video_duration: campaign.video_duration || 0
+                                                        video_duration: campaign.video_duration || 0,
+                                                        plan_name: campaign.plan_name || "",
+                                                        description: (campaign as any).description || "",
+                                                        reward_amount_override: (campaign as any).reward_amount_override || 0,
+                                                        target_count: campaign.target_count || 0,
+                                                        status: campaign.status || "active"
                                                     });
                                                     setIsEditDialogOpen(true);
                                                 }}
@@ -454,54 +488,111 @@ const CampaignsTable = () => {
             </Dialog>
 
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="sm:max-w-md bg-zinc-950 border-white/10">
+                <DialogContent className="sm:max-w-md bg-zinc-950 border-white/10 max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="text-white font-black uppercase tracking-widest flex items-center gap-2">
                             <Settings className="w-5 h-5 text-blue-500" />
-                            Editar Campanha
+                            {editingCampaign?.platform === 'diverse' ? 'Editar Tarefa Diversa' : 'Editar Campanha'}
                         </DialogTitle>
                         <DialogDescription className="text-muted-foreground text-xs">
-                            Corrija os detalhes da campanha caso o cliente tenha cometido algum erro.
+                            {editingCampaign?.platform === 'diverse'
+                                ? 'Edite todos os campos da tarefa diversa.'
+                                : 'Corrija os detalhes da campanha caso o cliente tenha cometido algum erro.'}
                         </DialogDescription>
                     </DialogHeader>
                     {editingCampaign && (
                         <div className="space-y-4 pt-4">
-                            <div className="space-y-2">
-                                <label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest ml-1">Link da Página/Canal (Destino)</label>
-                                <Input
-                                    value={editForm.page_link}
-                                    onChange={(e) => setEditForm({ ...editForm, page_link: e.target.value })}
-                                    className="bg-white/5 border-white/10"
-                                />
-                            </div>
-
-                            {editingCampaign.platform === 'youtube' && (
+                            {editingCampaign.platform === 'diverse' ? (
                                 <>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest ml-1">Link do Vídeo YouTube</label>
+                                        <label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest ml-1">Título da Tarefa</label>
                                         <Input
-                                            value={editForm.video_link}
-                                            onChange={(e) => setEditForm({ ...editForm, video_link: e.target.value })}
+                                            value={editForm.plan_name}
+                                            onChange={(e) => setEditForm({ ...editForm, plan_name: e.target.value })}
                                             className="bg-white/5 border-white/10"
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest ml-1">Título do Vídeo</label>
-                                        <Input
-                                            value={editForm.video_title}
-                                            onChange={(e) => setEditForm({ ...editForm, video_title: e.target.value })}
-                                            className="bg-white/5 border-white/10"
+                                        <label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest ml-1">Descrição / Guião (Instruções)</label>
+                                        <textarea
+                                            value={editForm.description}
+                                            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                                            className="w-full min-h-[120px] bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-primary transition-colors"
                                         />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest ml-1">Recompensa (Kz)</label>
+                                            <Input
+                                                type="number"
+                                                value={editForm.reward_amount_override}
+                                                onChange={(e) => setEditForm({ ...editForm, reward_amount_override: parseFloat(e.target.value) || 0 })}
+                                                className="bg-white/5 border-white/10"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest ml-1">Quantidade</label>
+                                            <Input
+                                                type="number"
+                                                value={editForm.target_count}
+                                                onChange={(e) => setEditForm({ ...editForm, target_count: parseInt(e.target.value) || 0 })}
+                                                className="bg-white/5 border-white/10"
+                                            />
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest ml-1">Duração (Segundos)</label>
+                                        <label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest ml-1">Status</label>
+                                        <select
+                                            value={editForm.status}
+                                            onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-primary transition-colors"
+                                        >
+                                            <option value="active" className="bg-zinc-900">Ativa</option>
+                                            <option value="completed" className="bg-zinc-900">Concluída</option>
+                                            <option value="cancelled" className="bg-zinc-900">Cancelada</option>
+                                        </select>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest ml-1">Link da Página/Canal (Destino)</label>
                                         <Input
-                                            type="number"
-                                            value={editForm.video_duration}
-                                            onChange={(e) => setEditForm({ ...editForm, video_duration: parseInt(e.target.value) || 0 })}
+                                            value={editForm.page_link}
+                                            onChange={(e) => setEditForm({ ...editForm, page_link: e.target.value })}
                                             className="bg-white/5 border-white/10"
                                         />
                                     </div>
+
+                                    {editingCampaign.platform === 'youtube' && (
+                                        <>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest ml-1">Link do Vídeo YouTube</label>
+                                                <Input
+                                                    value={editForm.video_link}
+                                                    onChange={(e) => setEditForm({ ...editForm, video_link: e.target.value })}
+                                                    className="bg-white/5 border-white/10"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest ml-1">Título do Vídeo</label>
+                                                <Input
+                                                    value={editForm.video_title}
+                                                    onChange={(e) => setEditForm({ ...editForm, video_title: e.target.value })}
+                                                    className="bg-white/5 border-white/10"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest ml-1">Duração (Segundos)</label>
+                                                <Input
+                                                    type="number"
+                                                    value={editForm.video_duration}
+                                                    onChange={(e) => setEditForm({ ...editForm, video_duration: parseInt(e.target.value) || 0 })}
+                                                    className="bg-white/5 border-white/10"
+                                                />
+                                            </div>
+                                        </>
+                                    )}
                                 </>
                             )}
 

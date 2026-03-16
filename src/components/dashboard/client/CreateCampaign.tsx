@@ -152,7 +152,7 @@ const CreateCampaign = ({
   const [videoLink, setVideoLink] = useState("");
   const [videoTitle, setVideoTitle] = useState("");
   const [videoDuration, setVideoDuration] = useState(0);
-  const [campaignGoal, setCampaignGoal] = useState<"followers" | "engagement">("followers");
+  const [campaignGoal, setCampaignGoal] = useState<"followers" | "engagement" | "message">("followers");
 
   const formatPrice = (price: number) => {
     return displayPrice(price, userCountry);
@@ -434,6 +434,21 @@ const CreateCampaign = ({
                 </p>
               </div>
             </button>
+
+            <button
+              onClick={() => setCampaignGoal("message")}
+              className={`p-5 rounded-xl border-2 transition-all text-left flex items-start gap-4 ${campaignGoal === "message" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}
+            >
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${campaignGoal === "message" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                <Smartphone className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-foreground">Seguir e Enviar Mensagem</h4>
+                <p className="text-[10px] text-muted-foreground leading-tight mt-1">
+                  Os trabalhadores irão seguir a página e enviar uma mensagem de saudação/interesse.
+                </p>
+              </div>
+            </button>
           </div>
         </div>
       </div>}
@@ -637,7 +652,11 @@ const CreateCampaign = ({
           </div>
           <div className="flex justify-between items-center pb-4 border-b border-border">
             <span className="text-muted-foreground">Objectivo</span>
-            <span className="font-bold text-primary">{campaignGoal === "followers" ? "Seguidores" : "Reacção + Comentário Positivo"}</span>
+            <span className="font-bold text-primary">
+              {campaignGoal === "followers" ? "Seguidores" :
+                campaignGoal === "engagement" ? "Reacção + Comentário Positivo" :
+                  "Seguir + Mensagem"}
+            </span>
           </div>
           {planType === "kwanza" && (
             <div className="flex justify-between items-center pb-4 border-b border-border">

@@ -13,6 +13,16 @@ const Plans = () => {
     { name: "Premium", followers: 3500, price: "400.000 Kz", time: "4 Semanas", priority: "Sócio", premium: true },
   ];
 
+  const kwanzaPlans = [
+    { name: "Básico", views: 50, price: "3.000 Kz", time: "1 Semana", priority: "Normal" },
+    { name: "Starter", views: 100, price: "5.000 Kz", time: "1 Semana", priority: "Normal" },
+    { name: "Popular", views: 250, price: "10.000 Kz", time: "1 Semana", priority: "Alta", popular: true },
+    { name: "Bronze", views: 500, price: "18.000 Kz", time: "1 Semana", priority: "Alta" },
+    { name: "Prata", views: 1000, price: "30.000 Kz", time: "2 Semanas", priority: "VIP" },
+    { name: "Ouro", views: 2500, price: "65.000 Kz", time: "3 Semanas", priority: "VIP" },
+    { name: "Premium", views: 5000, price: "120.000 Kz", time: "4 Semanas", priority: "Sócio", premium: true },
+  ];
+
   return (
     <section id="planos" className="section-container relative">
       <div className="absolute top-0 left-1/4 w-1/2 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
@@ -109,6 +119,78 @@ const Plans = () => {
                     ? "bg-yellow-500 text-yellow-950 hover:bg-yellow-400"
                     : plan.popular
                       ? "bg-primary text-black hover:bg-primary/80"
+                      : "bg-white/5 text-white hover:bg-white/10"
+                    }`}
+                >
+                  Selecionar
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Plan Section 2 - Kwanza */}
+        <div>
+          <div className="flex items-center gap-4 mb-10 pt-20 border-t border-white/5">
+            <div className="w-12 h-12 rounded-2xl bg-yellow-500/20 border border-yellow-500/30 flex items-center justify-center">
+              <Zap className="w-6 h-6 text-yellow-500" />
+            </div>
+            <div>
+              <h3 className="text-3xl font-black text-foreground uppercase tracking-tighter">Pacote "Kwanza"</h3>
+              <p className="text-xs text-yellow-500 font-black uppercase tracking-[0.2em] mt-1">YouTube Views & Engajamento</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {kwanzaPlans.map((plan, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className={`group p-8 rounded-3xl border transition-all duration-500 hover:scale-105 ${plan.premium
+                  ? "glass-card-gold border-gold/40 shadow-gold-premium"
+                  : plan.popular
+                    ? "glass-card-gold border-yellow-500/40 shadow-gold"
+                    : "glass-card border-white/5 hover:border-white/20"
+                  }`}
+              >
+                <div className="flex justify-between items-start mb-6">
+                  <h4 className={`text-2xl font-black tracking-tighter ${plan.premium ? 'text-yellow-500' : 'text-foreground'}`}>{plan.name}</h4>
+                  {plan.popular && <span className="px-3 py-1 bg-yellow-500 text-black text-[10px] font-black rounded-full uppercase tracking-tighter shadow-gold">Popular</span>}
+                  {plan.premium && <Trophy className="w-6 h-6 text-yellow-500" />}
+                </div>
+
+                <div className="mb-6">
+                  <div className={`text-5xl font-black tracking-tighter ${plan.premium ? 'text-yellow-500' : 'text-yellow-400'}`}>
+                    {plan.views.toLocaleString()}
+                  </div>
+                  <div className="text-xs uppercase tracking-widest text-muted-foreground font-bold mt-1">Visualizações</div>
+                </div>
+
+                <div className="space-y-4 mb-8">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Clock className="w-4 h-4 text-yellow-500/60" />
+                    Entrega: <b>{plan.time}</b>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <ShieldCheck className="w-4 h-4 text-yellow-500/60" />
+                    Prioridade: <b>{plan.priority}</b>
+                  </div>
+                </div>
+
+                <div className="flex items-baseline gap-1 mb-8">
+                  <span className="text-3xl font-black text-foreground tracking-tighter">{plan.price}</span>
+                  <span className="text-[10px] text-muted-foreground uppercase font-black">AOA</span>
+                </div>
+
+                <Link
+                  to="/auth?type=client&signup=true"
+                  className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center ${plan.premium
+                    ? "bg-yellow-500 text-yellow-950 hover:bg-yellow-400"
+                    : plan.popular
+                      ? "bg-yellow-500 text-black hover:bg-yellow-400"
                       : "bg-white/5 text-white hover:bg-white/10"
                     }`}
                 >

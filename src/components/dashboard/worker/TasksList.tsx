@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { toast } from "sonner";
-import { ExternalLink, Upload, CheckCircle, Clock, XCircle, AlertCircle, ShieldCheck, User as UserIcon, Trash2, Users } from "lucide-react";
+import { ExternalLink, Upload, CheckCircle, Clock, XCircle, AlertCircle, ShieldCheck, User as UserIcon, Trash2, Users, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import CountdownTimer from "../common/CountdownTimer";
 import ActiveTaskTimer from "./ActiveTaskTimer";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -227,12 +228,14 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
   };
 
   const submitProofs = async (taskId: string, campaignPlanType: string) => {
+    const isDiverse = activeTask?.campaign?.platform === 'diverse';
+
     if (!proofs.follow) {
-      toast.error("O print de seguir é obrigatório");
+      toast.error(isDiverse ? "O link de prova é obrigatório" : "O print de seguir é obrigatório");
       return;
     }
 
-    if (campaignPlanType === "kwanza" || (activeTask?.campaign?.plan_type === "ta_no_limao" && activeTask?.campaign?.campaign_goal === "engagement")) {
+    if (!isDiverse && (campaignPlanType === "kwanza" || (activeTask?.campaign?.plan_type === "ta_no_limao" && activeTask?.campaign?.campaign_goal === "engagement"))) {
       if (!proofs.like || !proofs.comment) {
         toast.error("Os prints de seguir, gostar e comentar são obrigatórios para este objetivo");
         return;
@@ -250,12 +253,6 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
 
     setUploading(true);
     try {
-      const isDiverse = activeTask?.campaign?.platform === 'diverse';
-
-      if (isDiverse && !proofs.follow) { // Note: for diverse, 'follow' input is repurposed as 'link' in some UIs or we use submission_link
-        // I will use a dedicated field below or repurpose one
-      }
-
       const { error } = await supabase
         .from("tasks")
         .update({
@@ -624,7 +621,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                             Depois de realizares o que foi pedido acima, cola o link do post ou vídeo como prova.
                           </p>
                           <button
-                            onClick={() => setHasOpenedLink(true)} // In diverse, opening the "Mission" is just reading it
+                            onClick={() => setShowProofForm(true)}
                             className="btn-primary w-full py-4 rounded-xl font-black uppercase tracking-widest text-xs shadow-neon active:scale-95 transition-all"
                           >
                             Entendi, vou realizar a tarefa!
@@ -700,13 +697,16 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                             <UserIcon className="w-4 h-4 text-primary" />
                           </div>
                           <span className="text-xs font-black font-mono truncate text-foreground">
-                            {profile?.[`${activeTask.campaign?.platform}_link`] || "CONTA NÃO VINCULADA"}
+                            {activeTask.campaign?.platform === 'diverse'
+                              ? (profile?.full_name || profile?.username || user.email)
+                              : (profile?.[`${activeTask.campaign?.platform}_link`] || "CONTA NÃO VINCULADA")}
                           </span>
                         </div>
                       </div>
                     </div>
 
                     <div className="space-y-4">
+                      {/* Platform-specific proof inputs */}
                       {activeTask.campaign?.platform === "diverse" ? (
                         <div className="space-y-4">
                           <div className="space-y-2">
@@ -780,7 +780,12 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                               )}
                             </div>
                           )}
+                        </>
+                      )}
 
+                      {/* Shared confirmation + submit (for diverse and social tasks, not YouTube auto-complete) */}
+                      {!(activeTask.campaign?.platform === "youtube" && activeTask.campaign?.video_id) && (
+                        <>
                           <div className="flex items-start space-x-3 p-4 bg-card/40 border border-border rounded-2xl group cursor-pointer hover:bg-card/60 transition-all">
                             <Checkbox
                               id="confirm-account"
@@ -798,7 +803,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
 
                           <button
                             onClick={() => submitProofs(activeTask.id, activeTask.campaign?.plan_type || "ta_no_limao")}
-                            disabled={uploading || !confirmAccount || (activeTask.campaign?.platform === 'diverse' ? !proofs.follow : !proofs.follow)}
+                            disabled={uploading || !confirmAccount || !proofs.follow}
                             className="btn-primary w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-neon disabled:opacity-30 disabled:cursor-not-allowed group transition-all"
                           >
                             {uploading ? (
@@ -806,7 +811,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                             ) : (
                               <span className="flex items-center justify-center gap-2">
                                 <CheckCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                Submeter Comprovativos
+                                {activeTask.campaign?.platform === "diverse" ? "Enviar Link" : "Submeter Comprovativos"}
                               </span>
                             )}
                           </button>
