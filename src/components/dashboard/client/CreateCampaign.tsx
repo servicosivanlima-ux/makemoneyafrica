@@ -239,13 +239,14 @@ const CreateCampaign = ({
         p_plan_type: planType === "limao" ? "ta_no_limao" : "kwanza",
         p_plan_name: selectedPlan?.name || "Custom Kwanza",
         p_platform: platform,
-        p_page_link: planType === "limao" ? pageLink : videoLink,
+        p_page_link: pageLink, // Agora mantemos o link do canal aqui
         p_target_count: selectedPlan?.count || 0,
         p_price: priceToDeduct,
         p_campaign_goal: campaignGoal,
         p_video_title: videoTitle || null,
         p_video_duration: videoDuration || null,
-        p_video_id: vid || null
+        p_video_id: vid || null,
+        p_video_link: videoLink || null // Enviamos o link do vídeo separadamente
       });
 
       if (error) throw error;
