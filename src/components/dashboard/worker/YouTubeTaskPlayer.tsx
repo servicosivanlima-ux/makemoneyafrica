@@ -46,9 +46,9 @@ const YouTubeTaskPlayer = ({ campaign, taskId, userId, onComplete }: YouTubeTask
     const requiredTime = campaign.video_duration || campaign.duration || 60;
     const progress = Math.min((elapsedTime / requiredTime) * 100, 100);
 
-    // 60s = 10kz rule -> 0.1666... kz/sec
+    // 60s = 10kz rule -> 0.1666... kz/sec | Max 5 minutes (300s)
     const rewardPerSecond = campaign.reward_per_second || (10 / 60);
-    const currentEarnings = (elapsedTime * rewardPerSecond).toFixed(2);
+    const currentEarnings = (Math.min(elapsedTime, 300) * rewardPerSecond).toFixed(2);
 
     const playerRef = useRef<any>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);

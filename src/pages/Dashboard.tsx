@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Mail, AlertTriangle } from "lucide-react";
 
 // Components
+import FraudRestricted from "@/pages/FraudRestricted";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import ClientStats from "@/components/dashboard/client/ClientStats";
@@ -332,6 +333,10 @@ const Dashboard = () => {
   }
 
   if (!user) return null;
+
+  if (profile?.fraud_restricted) {
+    return <FraudRestricted />;
+  }
 
   const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || "Usuário";
 

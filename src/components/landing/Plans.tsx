@@ -4,13 +4,13 @@ import { motion } from "framer-motion";
 
 const Plans = () => {
   const limaoPlans = [
-    { name: "Básico", followers: 30, price: "6.000 Kz", time: "1 Semana", priority: "Normal" },
-    { name: "Super Básico", followers: 50, price: "8.000 Kz", time: "1 Semana", priority: "Normal" },
-    { name: "Tá Fixe", followers: 100, price: "15.000 Kz", time: "1 Semana", priority: "Alta", popular: true },
-    { name: "Bronze", followers: 200, price: "27.000 Kz", time: "1 Semana", priority: "Alta" },
-    { name: "Prata", followers: 500, price: "75.000 Kz", time: "2 Semanas", priority: "VIP" },
-    { name: "Ouro", followers: 1000, price: "125.000 Kz", time: "3 Semanas", priority: "VIP" },
-    { name: "Premium", followers: 3500, price: "400.000 Kz", time: "4 Semanas", priority: "Sócio", premium: true },
+    { name: "Básico", followers: 30, price: "3.000 Kz", time: "1 Semana", priority: "Normal" },
+    { name: "Super Básico", followers: 50, price: "4.000 Kz", time: "1 Semana", priority: "Normal" },
+    { name: "Tá Fixe", followers: 100, price: "7.500 Kz", time: "1 Semana", priority: "Alta", popular: true },
+    { name: "Bronze", followers: 200, price: "13.500 Kz", time: "1 Semana", priority: "Alta" },
+    { name: "Prata", followers: 500, price: "37.500 Kz", time: "2 Semanas", priority: "VIP" },
+    { name: "Ouro", followers: 1000, price: "62.500 Kz", time: "3 Semanas", priority: "VIP" },
+    { name: "Premium", followers: 3500, price: "200.000 Kz", time: "4 Semanas", priority: "Sócio", premium: true },
   ];
 
   const kwanzaPlans = [

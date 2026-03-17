@@ -640,7 +640,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                         userId={user.id}
                         onComplete={() => {
                           setOpenTaskId(null);
-                          loadTasks();
+                          loadData();
                         }}
                       />
                     ) : (

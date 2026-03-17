@@ -29,38 +29,38 @@ interface PlanOption {
 const LIMAO_PLANS: PlanOption[] = [{
   name: "Básico",
   count: 30,
-  price: 6000,
+  price: 3000,
   reward: 60
 }, {
   name: "Super Básico",
   count: 50,
-  price: 8000,
+  price: 4000,
   reward: 48
 }, {
   name: "Tá Fixe",
   count: 100,
-  price: 15000,
+  price: 7500,
   reward: 45,
   popular: true
 }, {
   name: "Bronze",
   count: 200,
-  price: 27000,
+  price: 13500,
   reward: 40.5
 }, {
   name: "Prata",
   count: 500,
-  price: 75000,
+  price: 37500,
   reward: 45
 }, {
   name: "Ouro",
   count: 1000,
-  price: 125000,
+  price: 62500,
   reward: 37.5
 }, {
   name: "Premium",
   count: 3500,
-  price: 400000,
+  price: 200000,
   reward: 34,
   premium: true
 }];
@@ -488,12 +488,14 @@ const CreateCampaign = ({
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
-        {PLATFORMS.map(p => <button key={p.id} onClick={() => setPlatform(p.id)} className={`p-6 rounded-xl border-2 transition-all flex items-center gap-4 ${platform === p.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}>
-          <span className="text-4xl">{p.icon}</span>
-          <span className="font-display font-bold text-lg text-foreground">
-            {p.name}
-          </span>
-        </button>)}
+        {PLATFORMS
+          .filter(p => planType === "kwanza" ? p.id === "youtube" : p.id !== "youtube")
+          .map(p => <button key={p.id} onClick={() => setPlatform(p.id)} className={`p-6 rounded-xl border-2 transition-all flex items-center gap-4 ${platform === p.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}>
+            <span className="text-4xl">{p.icon}</span>
+            <span className="font-display font-bold text-lg text-foreground">
+              {p.name}
+            </span>
+          </button>)}
       </div>
 
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-10 border-t border-white/5">
@@ -575,6 +577,7 @@ const CreateCampaign = ({
                   </div>
                   <p className="text-[9px] text-muted-foreground ml-1 italic">
                     O tempo que o trabalhador precisará assistir será baseado neste valor.
+                    <span className="text-gold block font-bold mt-1 uppercase">⚠️ Atenção: Ganhos limitados a 5 minutos (300s) por vídeo.</span>
                   </p>
                 </div>
               </div>
