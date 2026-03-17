@@ -43,7 +43,7 @@ const YouTubeTaskPlayer = ({ campaign, taskId, userId, onComplete }: YouTubeTask
     const isHabilitated = !!workerProfile?.youtube_link;
     const channelName = workerProfile?.youtube_link?.split('/').pop() || workerProfile?.full_name;
 
-    const requiredTime = Math.min(Math.floor((campaign.duration || 60) * 0.7), 300);
+    const requiredTime = campaign.video_duration || campaign.duration || 60;
     const progress = Math.min((elapsedTime / requiredTime) * 100, 100);
 
     // 60s = 10kz rule -> 0.1666... kz/sec
@@ -209,7 +209,7 @@ const YouTubeTaskPlayer = ({ campaign, taskId, userId, onComplete }: YouTubeTask
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <a
-                    href={`https://youtube.com/channel/${campaign.channel_id}?sub_confirmation=1`}
+                    href={campaign.page_link?.includes('?') ? `${campaign.page_link}&sub_confirmation=1` : `${campaign.page_link}?sub_confirmation=1`}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setIsSubscribed(true)}

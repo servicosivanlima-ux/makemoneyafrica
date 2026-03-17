@@ -365,6 +365,11 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                             <span className="px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20 text-primary font-bold uppercase tracking-widest text-[9px]">
                               {campaign?.platform}
                             </span>
+                            <span className="px-2 py-0.5 rounded-md bg-gold/10 border border-gold/20 text-gold font-black uppercase tracking-widest text-[9px]">
+                              💰 {campaign?.platform === "diverse" && campaign?.reward_amount_override
+                                ? formatPrice(campaign.reward_amount_override, profile?.country)
+                                : (campaign?.reward ? formatPrice(campaign.reward, profile?.country) : "---")}
+                            </span>
                             <a
                               href={campaign?.page_link}
                               target="_blank"
