@@ -45,10 +45,24 @@ Para que os pagamentos com decimais (ex: 40,5 Kz) funcionem correctamente, é ne
 
 ```sql
 -- 1. Alterar colunas para suportar decimais
-ALTER TABLE public.profiles ALTER COLUMN wallet_balance TYPE NUMERIC(15,2);
-ALTER TABLE public.campaigns ALTER COLUMN reward TYPE NUMERIC(10,2);
-ALTER TABLE public.campaigns ALTER COLUMN remaining_budget TYPE NUMERIC(15,2);
-ALTER TABLE public.tasks ALTER COLUMN reward_amount TYPE NUMERIC(10,2);
+ALTER TABLE public.profiles ALTER PUBLICATION supabase_realtime ADD TABLE profiles;
+ALTER PUBLICATION supabase_realtime ADD TABLE campaigns;
+ALTER PUBLICATION supabase_realtime ADD TABLE tasks;
+ALTER PUBLICATION supabase_realtime ADD TABLE withdrawals;
+ALTER PUBLICATION supabase_realtime ADD TABLE deposits;
+ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+ALTER PUBLICATION supabase_realtime ADD TABLE kyc_documents;
+ALTER PUBLICATION supabase_realtime ADD TABLE referral_commissions;
+
+-- Garante que todos os dados sejam enviados no broadcast
+ALTER TABLE profiles REPLICA IDENTITY FULL;
+ALTER TABLE campaigns REPLICA IDENTITY FULL;
+ALTER TABLE tasks REPLICA IDENTITY FULL;
+ALTER TABLE withdrawals REPLICA IDENTITY FULL;
+ALTER TABLE deposits REPLICA IDENTITY FULL;
+ALTER TABLE notifications REPLICA IDENTITY FULL;
+ALTER TABLE kyc_documents REPLICA IDENTITY FULL;
+ALTER TABLE referral_commissions REPLICA IDENTITY FULL;
 
 -- 2. Actualizar função de criação de campanha
 CREATE OR REPLACE FUNCTION public.create_campaign_with_balance(

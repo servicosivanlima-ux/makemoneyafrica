@@ -207,10 +207,48 @@ const Dashboard = () => {
       )
       .subscribe();
 
+    // Listen for withdrawal changes (affects balance and status)
+    const withdrawalsChannel = supabase
+      .channel(`dashboard-withdrawals-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'withdrawals',
+          filter: `worker_id=eq.${user.id}`
+        },
+        () => {
+          console.log("Realtime: Withdrawals updated, refreshing data...");
+          refreshData();
+        }
+      )
+      .subscribe();
+
+    // Listen for referral commission changes (affects worker balance)
+    const referralChannel = supabase
+      .channel(`dashboard-referrals-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'referral_commissions',
+          filter: userType === 'worker' ? `worker_id=eq.${user.id}` : undefined
+        },
+        () => {
+          console.log("Realtime: Referral commissions updated, refreshing data...");
+          refreshData();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(profileChannel);
       supabase.removeChannel(campaignsChannel);
       supabase.removeChannel(tasksChannel);
+      supabase.removeChannel(withdrawalsChannel);
+      supabase.removeChannel(referralChannel);
     };
   }, [user, userType]);
 

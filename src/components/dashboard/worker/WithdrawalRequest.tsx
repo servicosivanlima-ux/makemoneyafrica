@@ -38,6 +38,27 @@ const WithdrawalRequest = ({ user, balance, onWithdrawalComplete }: WithdrawalRe
 
   useEffect(() => {
     loadWithdrawals();
+
+    const channel = supabase
+      .channel(`withdrawals-history-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'withdrawals',
+          filter: `worker_id=eq.${user.id}`
+        },
+        () => {
+          console.log("Realtime: Withdrawals list updated");
+          loadWithdrawals();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user.id]);
 
   const loadWithdrawals = async () => {
