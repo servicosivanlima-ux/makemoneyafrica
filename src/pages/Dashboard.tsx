@@ -149,6 +149,71 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Realtime subscription for automatic updates
+  useEffect(() => {
+    if (!user) return;
+
+    // Listen for profile changes (balance, account type, etc)
+    const profileChannel = supabase
+      .channel(`dashboard-profile-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log("Realtime: Profile updated, refreshing data...");
+          refreshData();
+        }
+      )
+      .subscribe();
+
+    // Listen for campaign changes (relevant for clients)
+    const campaignsChannel = supabase
+      .channel(`dashboard-campaigns-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'campaigns',
+          filter: userType === 'client' ? `client_id=eq.${user.id}` : undefined
+        },
+        () => {
+          console.log("Realtime: Campaigns updated, refreshing data...");
+          refreshData();
+        }
+      )
+      .subscribe();
+
+    // Listen for task changes (relevant for workers)
+    const tasksChannel = supabase
+      .channel(`dashboard-tasks-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+          filter: userType === 'worker' ? `worker_id=eq.${user.id}` : undefined
+        },
+        () => {
+          console.log("Realtime: Tasks updated, refreshing data...");
+          refreshData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(profileChannel);
+      supabase.removeChannel(campaignsChannel);
+      supabase.removeChannel(tasksChannel);
+    };
+  }, [user, userType]);
+
   // Check if worker has completed verification (KYC + withdraw method)
   const checkWorkerVerification = async (userId: string) => {
     try {
