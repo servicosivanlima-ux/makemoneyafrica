@@ -370,7 +370,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                             <span className="px-2 py-0.5 rounded-md bg-gold/10 border border-gold/20 text-gold font-black uppercase tracking-widest text-[9px]">
                               💰 {campaign?.platform === "diverse" && campaign?.reward_amount_override
                                 ? formatPrice(campaign.reward_amount_override, profile?.country)
-                                : (campaign?.reward ? formatPrice(campaign.reward, profile?.country) : "---")}
+                                : (campaign?.reward ? formatPrice(campaign.reward, profile?.country) : formatPrice(campaign?.plan_type === 'ta_no_limao' ? 100 : 200, profile?.country))}
                             </span>
                             <a
                               href={campaign?.page_link}
@@ -496,7 +496,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                           <p className="text-2xl font-black text-white tracking-tighter">
                             {isDiverse && campaign.reward_amount_override
                               ? formatPrice(campaign.reward_amount_override, profile?.country)
-                              : (campaign.reward ? formatPrice(campaign.reward, profile?.country) : "---")}
+                              : (campaign.reward ? formatPrice(campaign.reward, profile?.country) : formatPrice(campaign.plan_type === 'ta_no_limao' ? 100 : 200, profile?.country))}
                           </p>
                         </div>
                       </div>
