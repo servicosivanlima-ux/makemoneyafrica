@@ -115,7 +115,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
   }, [user.id]);
 
   const availableCampaigns = campaigns
-    .filter(campaign => !myTasks.some(t => t.campaign_id === campaign.id))
+    .filter(campaign => !myTasks.some(t => t.campaign_id === campaign.id && t.status !== 'rejected'))
     .filter(campaign => {
       if (campaign.platform === 'diverse') return true;
       const link = profile?.[`${campaign.platform}_link`];
@@ -123,7 +123,7 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
     });
 
   const hiddenByLinksCount = campaigns
-    .filter(campaign => !myTasks.some(t => t.campaign_id === campaign.id))
+    .filter(campaign => !myTasks.some(t => t.campaign_id === campaign.id && t.status !== 'rejected'))
     .filter(campaign => {
       if (campaign.platform === 'diverse') return false;
       const link = profile?.[`${campaign.platform}_link`];
@@ -169,10 +169,10 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
 
   const claimTask = async (campaign: AvailableCampaign) => {
     try {
-      // Check if already has task for this campaign
-      const existing = myTasks.find(t => t.campaign_id === campaign.id);
+      // Check if already has an ACTIVE task for this campaign
+      const existing = myTasks.find(t => t.campaign_id === campaign.id && t.status !== 'rejected');
       if (existing) {
-        toast.error("Você já tem uma tarefa para esta campanha");
+        toast.error("Você já tem uma tarefa em curso ou a aguardar revisão para esta campanha");
         return;
       }
 
@@ -570,13 +570,27 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
                         </div>
                       </div>
                       <div className="flex items-center gap-6">
-                        <div className="text-right">
-                          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Recebido</p>
-                          <p className="font-black text-foreground">{formatPrice(task.reward_amount, profile?.country)}</p>
+                        <div className="text-right whitespace-nowrap">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                            {task.status === "rejected" ? "Recompensa" : "Recebido"}
+                          </p>
+                          <p className={`font-black ${task.status === "rejected" ? "text-muted-foreground/50 line-through" : "text-foreground"}`}>
+                            {task.status === "rejected" ? formatPrice(0, profile?.country) : formatPrice(task.reward_amount, profile?.country)}
+                          </p>
                         </div>
-                        <div className="w-8 h-8 rounded-full bg-card/40 flex items-center justify-center">
-                          <ExternalLink className="w-3 h-3 text-muted-foreground" />
-                        </div>
+                        {task.status === "rejected" ? (
+                          <button
+                            onClick={() => handleDeleteTask(task.id)}
+                            className="w-10 h-10 rounded-xl bg-destructive/10 hover:bg-destructive text-destructive hover:text-white flex items-center justify-center transition-all group"
+                            title="Remover e Tentar Novamente"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-card/40 flex items-center justify-center">
+                            <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
