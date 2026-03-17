@@ -563,20 +563,43 @@ const CreateCampaign = ({
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Tempo Total do Vídeo (segundos)</label>
-                  <div className="relative group">
-                    <input
-                      type="number"
-                      placeholder="Ex: 120"
-                      value={videoDuration || ""}
-                      onChange={(e) => setVideoDuration(Number(e.target.value))}
-                      className="w-full bg-white/5 border border-white/10 group-hover:border-gold/50 transition-all h-12 pl-10 rounded-xl outline-none focus:border-gold"
-                    />
-                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-gold transition-colors" />
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Tempo Total do Vídeo</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="relative group">
+                      <input
+                        type="number"
+                        placeholder="Minutos"
+                        value={Math.floor(videoDuration / 60) || ""}
+                        onChange={(e) => {
+                          const mins = Math.max(0, Number(e.target.value));
+                          const secs = videoDuration % 60;
+                          setVideoDuration(mins * 60 + secs);
+                        }}
+                        className="w-full bg-white/5 border border-white/10 group-hover:border-gold/50 transition-all h-12 pl-10 rounded-xl outline-none focus:border-gold"
+                      />
+                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-gold transition-colors" />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-muted-foreground font-bold uppercase">MIN</span>
+                    </div>
+                    <div className="relative group">
+                      <input
+                        type="number"
+                        placeholder="Segundos"
+                        max="59"
+                        value={videoDuration % 60 || ""}
+                        onChange={(e) => {
+                          const mins = Math.floor(videoDuration / 60);
+                          const secs = Math.min(59, Math.max(0, Number(e.target.value)));
+                          setVideoDuration(mins * 60 + secs);
+                        }}
+                        className="w-full bg-white/5 border border-white/10 group-hover:border-gold/50 transition-all h-12 pl-10 rounded-xl outline-none focus:border-gold"
+                      />
+                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-gold transition-colors" />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-muted-foreground font-bold uppercase">SEG</span>
+                    </div>
                   </div>
                   <p className="text-[9px] text-muted-foreground ml-1 italic">
-                    O tempo que o trabalhador precisará assistir será baseado neste valor.
+                    Total: <span className="text-white font-bold">{videoDuration} segundos</span>. O tempo necessário baseia-se neste valor.
                     <span className="text-gold block font-bold mt-1 uppercase">⚠️ Atenção: Ganhos limitados a 5 minutos (300s) por vídeo.</span>
                   </p>
                 </div>
