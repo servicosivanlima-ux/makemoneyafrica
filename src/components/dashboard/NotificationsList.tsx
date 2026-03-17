@@ -23,6 +23,28 @@ const NotificationsList = ({ user }: NotificationsListProps) => {
 
   useEffect(() => {
     loadNotifications();
+
+    // Realtime subscription for notifications
+    const channel = supabase
+      .channel(`notifications-sync-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log("Realtime: Notifications updated, reloading...");
+          loadNotifications();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user.id]);
 
   const loadNotifications = async () => {

@@ -30,6 +30,28 @@ const ClientCampaigns = ({
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     loadCampaigns();
+
+    // Subscribe to realtime changes for this client's campaigns
+    const channel = supabase
+      .channel(`client-campaigns-sync-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'campaigns',
+          filter: `client_id=eq.${user.id}`
+        },
+        () => {
+          console.log("Realtime: Campaigns updated for client, reloading...");
+          loadCampaigns();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user.id]);
   const loadCampaigns = async () => {
     try {

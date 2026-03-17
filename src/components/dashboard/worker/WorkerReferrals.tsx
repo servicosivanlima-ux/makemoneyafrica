@@ -32,6 +32,47 @@ const WorkerReferrals = ({ user }: { user: any }) => {
     useEffect(() => {
         if (user) {
             loadReferralData();
+
+            // Realtime for commissions
+            const commsChannel = supabase
+                .channel(`worker-commissions-${user.id}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'referral_commissions',
+                        filter: `worker_id=eq.${user.id}`
+                    },
+                    () => {
+                        console.log("Realtime: Commissions updated, reloading...");
+                        loadReferralData();
+                    }
+                )
+                .subscribe();
+
+            // Realtime for referred users (profiles)
+            const referralsChannel = supabase
+                .channel(`worker-referrals-${user.id}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'profiles',
+                        filter: `referred_by=eq.${user.id}`
+                    },
+                    () => {
+                        console.log("Realtime: New referral detected, reloading...");
+                        loadReferralData();
+                    }
+                )
+                .subscribe();
+
+            return () => {
+                supabase.removeChannel(commsChannel);
+                supabase.removeChannel(referralsChannel);
+            };
         }
     }, [user]);
 
