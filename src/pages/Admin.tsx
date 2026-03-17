@@ -212,7 +212,7 @@ const Admin = () => {
           .in("id", campaignIds);
 
         const { data: workerProfiles } = workerIds.length > 0
-          ? await supabase.from("profiles").select("user_id, full_name, email, country").in("user_id", workerIds)
+          ? await supabase.from("profiles").select("user_id, full_name, email, country, facebook_link, instagram_link, tiktok_link, youtube_link").in("user_id", workerIds)
           : { data: [] };
 
         const tasksWithRelations = tasksData.map(task => ({

@@ -33,6 +33,10 @@ interface Task {
     full_name: string;
     email: string;
     country: string | null;
+    facebook_link?: string | null;
+    instagram_link?: string | null;
+    tiktok_link?: string | null;
+    youtube_link?: string | null;
   } | null;
 }
 
@@ -250,16 +254,55 @@ const TasksTable = ({ tasks, onRefresh }: TasksTableProps) => {
           </DialogHeader>
           {selectedTask && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <span className="text-sm">Link da página:</span>
-                <a
-                  href={selectedTask.campaign?.page_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline flex items-center gap-1"
-                >
-                  Abrir <ExternalLink className="w-3 h-3" />
-                </a>
+              <div className="flex flex-col gap-2 p-3 bg-muted rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Link da Campanha:</span>
+                  <a
+                    href={selectedTask.campaign?.page_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline flex items-center gap-1 text-sm font-medium"
+                  >
+                    Abrir Campanha <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+
+                {/* Perfil do Trabalhador */}
+                {(() => {
+                  const platform = selectedTask.campaign?.platform;
+                  let workerSocialLink = null;
+                  let platformLabel = "Social";
+
+                  if (platform === 'facebook') {
+                    workerSocialLink = selectedTask.worker?.facebook_link;
+                    platformLabel = "Facebook";
+                  } else if (platform === 'instagram') {
+                    workerSocialLink = selectedTask.worker?.instagram_link;
+                    platformLabel = "Instagram";
+                  } else if (platform === 'tiktok') {
+                    workerSocialLink = selectedTask.worker?.tiktok_link;
+                    platformLabel = "TikTok";
+                  } else if (platform === 'youtube') {
+                    workerSocialLink = selectedTask.worker?.youtube_link;
+                    platformLabel = "YouTube";
+                  }
+
+                  if (!workerSocialLink) return null;
+
+                  return (
+                    <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-primary">Perfil do Trabalhador:</span>
+                      <a
+                        href={workerSocialLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline flex items-center gap-1 text-sm font-bold bg-primary/10 px-2 py-1 rounded"
+                      >
+                        Abrir Canal {platformLabel} <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
