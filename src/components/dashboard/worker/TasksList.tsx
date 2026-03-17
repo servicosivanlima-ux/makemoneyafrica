@@ -222,8 +222,10 @@ const TasksList = ({ user, onTaskComplete }: TasksListProps) => {
       });
       if (error) throw error;
       setMyTasks(prev => prev.filter(t => t.id !== id));
-    } catch (error) {
+      toast.success("Registo apagado com sucesso.");
+    } catch (error: any) {
       console.error("Error deleting task:", error);
+      toast.error(`Erro ao excluir: ${error?.message || "Erro desconhecido"}`);
     }
   };
 
