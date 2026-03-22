@@ -82,11 +82,13 @@ const CampaignsTable = () => {
             if (campaignsError) throw campaignsError;
 
             if (campaignsData && campaignsData.length > 0) {
-                const clientIds = [...new Set(campaignsData.map((c: any) => c.client_id))];
-                const { data: clientProfiles, error: profilesError } = await supabase
-                    .from("profiles" as any)
-                    .select("user_id, full_name, email")
-                    .in("user_id", clientIds);
+                const clientIds = [...new Set(campaignsData.map((c: any) => c.client_id).filter(Boolean))];
+                const { data: clientProfiles, error: profilesError } = clientIds.length > 0
+                    ? await supabase
+                        .from("profiles" as any)
+                        .select("user_id, full_name, email")
+                        .in("user_id", clientIds)
+                    : { data: [], error: null };
 
                 if (profilesError) throw profilesError;
 

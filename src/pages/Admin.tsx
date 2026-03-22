@@ -173,11 +173,13 @@ const Admin = () => {
 
       if (!campaignsError && campaignsData) {
         // Fetch client profiles separately
-        const clientIds = [...new Set(campaignsData.map(c => c.client_id))];
-        const { data: clientProfiles } = await supabase
-          .from("profiles")
-          .select("user_id, full_name, email, phone, country")
-          .in("user_id", clientIds);
+        const clientIds = [...new Set(campaignsData.map(c => c.client_id).filter(Boolean))];
+        const { data: clientProfiles } = clientIds.length > 0
+          ? await supabase
+            .from("profiles")
+            .select("user_id, full_name, email, phone, country")
+            .in("user_id", clientIds)
+          : { data: [] };
 
         const campaignsWithClients = campaignsData.map(campaign => ({
           ...campaign,
