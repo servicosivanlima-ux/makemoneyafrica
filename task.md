@@ -33,10 +33,15 @@ The objective is to hide the "Kwanza" plan from the entire platform as per user 
 
 - [x] Definitive Referral & Schema Fix [x]
     - [x] Perform comprehensive database audit
-    - [x] Create consolidated repair script `FIX_DEFINITIVE_SCHEMA_V3.sql`
-    - [x] Apply definitive migration to Supabase
-    - [x] Verify `profiles` schema and RPC functions
-    - [x] Test registration flow with referrals
+    - [x] Create consolidated- [x] Diagnose "Failed to fetch" error <!-- id: 0 -->
+    - [x] Check `.env` configuration <!-- id: 1 -->
+    - [x] Verify Supabase project status <!-- id: 2 -->
+    - [x] Test Supabase connection via script <!-- id: 3 -->
+- [ ] Fix configuration <!-- id: 4 -->
+    - [ ] Identify correct target project <!-- id: 6 -->
+    - [ ] Update `.env` with valid credentials <!-- id: 7 -->
+    - [ ] Restore database schema if necessary <!-- id: 8 -->
+- [ ] Verify Fix <!-- id: 5 -->
 
 - [x] Fix Access Metrics Tracking [x]
     - [x] Research tracking logic and missing columns
