@@ -27,14 +27,14 @@ const Navbar = () => {
           <Link to="/" className="flex items-center gap-3 group">
             <img
               src="/logo.png"
-              alt="Make Money With Lima"
-              className="w-12 h-12 object-contain drop-shadow-neon group-hover:scale-110 transition-transform duration-300"
+              alt="+Kumbú"
+              className="w-12 h-12 object-contain group-hover:scale-110 transition-transform duration-300"
             />
             <div className="flex flex-col">
-              <span className="font-display font-black text-xl text-foreground leading-none tracking-tighter">
-                Make Money
+              <span className="font-display font-black text-2xl text-foreground leading-none tracking-tighter">
+                +Kumbú
               </span>
-              <span className="text-[10px] uppercase tracking-[0.3em] text-primary font-black">With Lima</span>
+              <span className="text-[10px] uppercase tracking-[0.3em] text-primary font-black">Angola</span>
             </div>
           </Link>
 

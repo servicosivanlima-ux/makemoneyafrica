@@ -13,7 +13,7 @@ const Hero = () => {
 
       {/* Grid Pattern */}
       <div className="absolute inset-0 opacity-[0.05] pointer-events-none mask-radial" style={{
-        backgroundImage: `radial-gradient(circle at 2px 2px, hsl(84, 100%, 59%) 1px, transparent 0)`,
+        backgroundImage: `radial-gradient(circle at 2px 2px, hsl(var(--primary)) 1px, transparent 0)`,
         backgroundSize: '48px 48px'
       }} />
 
@@ -24,12 +24,12 @@ const Hero = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-3 px-5 py-2 rounded-full glass-card-lime mb-10 border border-primary/20 shadow-neon"
+            className="inline-flex items-center gap-3 px-5 py-2 rounded-full glass-card-green mb-10 border border-green-500/20 shadow-green"
           >
             <img src="/angola-flag.png" alt="AO" className="w-5 h-5 object-contain rounded-full shadow-lg" />
             <div className="flex items-center gap-2">
-              <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-500/20 border border-red-500/30 text-red-500 font-black text-xs shadow-[0_0_15px_rgba(239,68,68,0.2)]">18+</span>
-              <span className="text-xs font-black text-primary uppercase tracking-[0.3em]">Plataforma Nº1 em Angola</span>
+              <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-500/20 border border-red-500/30 text-red-500 font-black text-xs">18+</span>
+              <span className="text-xs font-black text-foreground uppercase tracking-[0.3em]">Plataforma Nº1 em Angola</span>
             </div>
           </motion.div>
 
@@ -40,10 +40,10 @@ const Hero = () => {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-10 leading-[1.1] tracking-tighter"
           >
-            <span className="text-foreground block">Faça Dinheiro</span>
-            <span className="flex items-center justify-center gap-3 sm:gap-4">
-              <span className="text-muted-foreground/30 text-3xl sm:text-4xl md:text-5xl font-medium tracking-normal lowercase">com</span>
-              <span className="text-gradient-neon filter drop-shadow-[0_0_40px_rgba(132,255,46,0.4)] uppercase">LIMA</span>
+            <span className="text-foreground block font-display">+Kumbú</span>
+            <span className="flex items-center justify-center gap-3 sm:gap-4 mt-2">
+              <span className="text-muted-foreground/30 text-2xl sm:text-3xl md:text-4xl font-medium tracking-normal lowercase">é</span>
+              <span className="text-gradient-gold uppercase">Dinheiro Real</span>
             </span>
           </motion.h1>
 

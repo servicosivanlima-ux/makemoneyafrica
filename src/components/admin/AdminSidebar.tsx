@@ -85,12 +85,12 @@ const AdminSidebar = ({
             <div className="flex items-center gap-3 group cursor-default">
               <img
                 src="/logo.png"
-                alt="Logo"
-                className="w-10 h-10 object-contain drop-shadow-neon group-hover:rotate-12 transition-transform duration-500"
+                alt="+Kumbú"
+                className="w-10 h-10 object-contain group-hover:rotate-12 transition-transform duration-500"
               />
               <div>
-                <span className="font-display font-black text-xl text-white tracking-tighter leading-none block">MMWL</span>
-                <span className="text-[10px] font-black tracking-[0.3em] text-primary uppercase">Admin</span>
+                <span className="font-display font-black text-2xl text-white tracking-tighter leading-none block">+K</span>
+                <span className="text-[10px] font-black tracking-[0.3em] text-primary uppercase">Kumbú Admin</span>
               </div>
             </div>
             <button onClick={onClose} className="lg:hidden p-2 rounded-xl bg-white/5 text-muted-foreground hover:text-white">

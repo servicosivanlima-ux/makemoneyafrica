@@ -15,14 +15,14 @@ const Footer = () => {
             <Link to="/" className="flex items-center gap-4 mb-8 group">
               <img
                 src="/logo.png"
-                alt="Logo"
-                className="w-14 h-14 object-contain drop-shadow-neon group-hover:rotate-6 transition-transform duration-500"
+                alt="+Kumbú"
+                className="w-14 h-14 object-contain group-hover:rotate-6 transition-transform duration-500"
               />
               <div className="flex flex-col">
-                <span className="font-display font-bold text-2xl text-foreground tracking-tighter">
-                  Make Money
+                <span className="font-display font-bold text-2xl text-foreground tracking-tighter uppercase">
+                  +Kumbú
                 </span>
-                <span className="text-[10px] uppercase tracking-[0.3em] text-primary font-black">With Lima</span>
+                <span className="text-[10px] uppercase tracking-[0.3em] text-primary font-black">Angola</span>
               </div>
             </Link>
             <p className="text-muted-foreground text-lg max-w-md mb-10 leading-relaxed">
@@ -100,7 +100,7 @@ const Footer = () => {
         <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           <div className="flex flex-col gap-2">
             <p className="text-xs text-muted-foreground uppercase tracking-[0.2em] font-bold">
-              © {new Date().getFullYear()} Make Money With Lima. A revolução digital angolana. Actualidade garantida.
+              © {new Date().getFullYear()} +Kumbú. A revolução digital angolana. Todos os direitos reservados.
             </p>
             <div className="flex items-center justify-center md:justify-start gap-2 group cursor-default">
               <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">Desenvolvido por</span>
